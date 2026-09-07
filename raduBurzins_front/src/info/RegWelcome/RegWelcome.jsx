@@ -76,8 +76,8 @@ function RegWelcome() {
                 </h1>
 
                 <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base">
-                  Šī sākumlapa dod tev izvēli — nevis tikai vienu ceļu. Atver kalendāru, veido notikumus,
-                  skaties profilu vai ieej svētku režīmā.
+                  Šī sākumlapa dod tev izvēli - nevis tikai vienu ceļu. Atver kalendāru, veido notikumus,
+                  skaties profilu.
                 </p>
               </div>
 

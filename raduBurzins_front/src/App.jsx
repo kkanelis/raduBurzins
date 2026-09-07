@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import NavBar from "./components/NavBar/NavBar";
-import UserSidebar from "./components/UserSidebar/UserSidebar";
+// import UserSidebar from "./components/UserSidebar/UserSidebar";
 import Welcome from "./info/Welcome/Welcome";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
@@ -27,11 +27,11 @@ const AppContent = () => {
     <div className="min-h-screen bg-gradient-to-br from-warm-beige via-off-white to-[var(--bg-2)] flex flex-col">
       {user && <NavBar />}
       <div className={user ? "flex flex-1" : "flex-1"}>
-        {user && (
+        {/* {user && (
           <div className="hidden lg:block">
             <UserSidebar />
           </div>
-        )}
+        )} */}
         <main className="flex-1 w-full">
           <Suspense
             fallback={

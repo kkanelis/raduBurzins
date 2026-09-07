@@ -1,3 +1,1 @@
 # Radu Burziņš
-
-Privātais projekts
