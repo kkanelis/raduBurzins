@@ -1,0 +1,10 @@
+export { default as Welcome } from "../info/Welcome/Welcome";
+export { default as InfoPage } from "../info/InfoPage/InfoPage";
+export { default as RegWelcome } from "../info/RegWelcome/RegWelcome";
+export { default as FamilyChat } from "../info/FamilyChat/FamilyChat";
+export { default as Terms } from "../info/Terms/Terms";
+export { default as Albums } from "../info/Albums/Albums";
+export { default as MyEvents } from "../info/RegWelcome/MyEvents";
+export { default as Calendar } from "../components/Calendar/Calendar";
+export { default as Profile } from "../components/auth/Profile";
+export { default as ChristmasLottery } from "../components/Christmas/ChristmasLottery";
