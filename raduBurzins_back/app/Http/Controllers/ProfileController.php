@@ -42,14 +42,14 @@ class ProfileController extends Controller
 
         $user->fill($validated);
 
-        if ($request->hasFile('avatar')) {
-            if ($user->avatar_path) {
-                Storage::disk('public')->delete($user->avatar_path);
-            }
+        // if ($request->hasFile('avatar')) {
+        //     if ($user->avatar_path) {
+        //         Storage::disk('public')->delete($user->avatar_path);
+        //     }
 
-            $avatarPath = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar_path = $avatarPath;
-        }
+        //     $avatarPath = $request->file('avatar')->store('avatars', 'public');
+        //     $user->avatar_path = $avatarPath;
+        // }
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -65,48 +65,5 @@ class ProfileController extends Controller
         }
 
         return redirect()->route('profile.edit');
-    }
-
-    public function avatar(Request $request): JsonResponse
-    {
-        $request->validate([
-            'avatar' => ['required', 'image', 'max:2048'],
-        ]);
-
-        $user = $request->user();
-
-        if ($user->avatar_path) {
-            Storage::disk('public')->delete($user->avatar_path);
-        }
-
-        $avatarPath = $request->file('avatar')->store('avatars', 'public');
-        $user->avatar_path = $avatarPath;
-        $user->save();
-
-        return response()->json([
-            'message' => 'Avatar updated successfully.',
-            'user' => $user->fresh(),
-        ]);
-    }
-
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
-
-        $user = $request->user();
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
     }
 }
