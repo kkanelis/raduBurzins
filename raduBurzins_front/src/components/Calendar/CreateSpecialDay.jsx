@@ -17,6 +17,7 @@ function CreateSpecialDay({ onClose, onSuccess }) {
     event_time: '',
     shared_user_ids: [],
   });
+  const [shareWithOthers, setShareWithOthers] = useState(false);
   const [error, setError] = useState('');
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -24,10 +25,9 @@ function CreateSpecialDay({ onClose, onSuccess }) {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const response = await api.get('/api/users/status');
-        const combined = [...(response.data.online || []), ...(response.data.offline || [])];
-        const uniqueUsers = Array.from(new Map(combined.map((user) => [user.id, user])).values());
-        setUsers(uniqueUsers);
+        const response = await api.get('/api/users');
+        const users = [...(response.data || [])];
+        setUsers(users);
       } catch (err) {
         setUsers([]);
       } finally {
@@ -59,7 +59,8 @@ function CreateSpecialDay({ onClose, onSuccess }) {
         ...formData,
         date: formData.date.toISOString().split('T')[0],
         repeats: formData.repeats ? '1' : '0',
-        shared_user_ids: formData.shared_user_ids,
+        is_public: false,
+        shared_with_user_ids: formData.shared_user_ids,
       };
 
       const response = await api.post('/api/special-days', payload);
@@ -149,14 +150,17 @@ function CreateSpecialDay({ onClose, onSuccess }) {
           <label className="flex items-center gap-2 rounded-xl border border-white/70 bg-white/70 px-4 py-3">
             <input
               type="checkbox"
-              checked={formData.shared_user_ids.length > 0}
-              readOnly
+              checked={shareWithOthers}
+              onChange={(e) => {
+                setFormData({ ...formData, is_public: e.target.checked });
+                setShareWithOthers(e.target.checked);
+              }}
             />
-            <span className="text-sm text-dark-purple">Redzams izvēlētiem cilvēkiem</span>
+            <span className="text-sm text-dark-purple">Privāts pasākums</span>
           </label>
         </div>
 
-        <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
+        {formData.is_public && <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
           <div className="mb-3">
             <h3 className="text-sm font-bold text-dark-purple">Kas var redzēt šo notikumu?</h3>
             <p className="mt-1 text-xs text-muted">
@@ -185,9 +189,6 @@ function CreateSpecialDay({ onClose, onSuccess }) {
                       <div className="text-sm font-semibold text-dark-purple">
                         {user.first_name} {user.last_name}
                       </div>
-                      <div className="text-xs text-muted">
-                        {user.is_admin ? 'Administrators' : 'Lietotājs'}
-                      </div>
                     </div>
                     <span
                       className={`rounded-full px-2 py-1 text-xs font-bold ${
@@ -203,7 +204,7 @@ function CreateSpecialDay({ onClose, onSuccess }) {
           ) : (
             <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
           )}
-        </div>
+        </div>}
 
         <div className="flex justify-end gap-3">
           <button type="button" onClick={onClose} className="btn-ghost">Atcelt</button>

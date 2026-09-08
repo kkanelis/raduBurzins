@@ -11,6 +11,7 @@ function MyEvents() {
   const [error, setError] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [shareWithOthers, setShareWithOthers] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -42,10 +43,9 @@ function MyEvents() {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const response = await api.get('/api/users/status');
-        const combined = [...(response.data.online || []), ...(response.data.offline || [])];
-        const uniqueUsers = Array.from(new Map(combined.map((user) => [user.id, user])).values());
-        setUsers(uniqueUsers);
+        const response = await api.get('/api/users');
+        const users = [...(response.data || [])];
+        setUsers(users);
       } catch (err) {
         setUsers([]);
       } finally {
@@ -77,6 +77,7 @@ function MyEvents() {
   };
 
   const openEditor = (event) => {
+    const sharedUserIds = event.shared_with_user_ids;
     setSelectedEvent(event);
     setFormData({
       title: event.title || '',
@@ -86,11 +87,7 @@ function MyEvents() {
       location: event.location || '',
       event_time: event.event_time || '',
       is_public: Boolean(event.is_public),
-      shared_user_ids: Array.isArray(event.shared_users)
-        ? event.shared_users.map((user) => user.id)
-        : Array.isArray(event.shared_user_ids)
-          ? event.shared_user_ids
-          : [],
+      shared_user_ids: event.shared_with_user_ids
     });
     setImageFile(null);
     setRemoveImage(false);
@@ -379,15 +376,23 @@ function MyEvents() {
                 <label className="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/70 px-4 py-3">
                   <input
                     type="checkbox"
-                    checked={formData.is_public}
-                    onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
+                    checked={!formData.is_public}
+                    onChange={(e) => {
+                      const isPrivate = e.target.checked;
+                      setShareWithOthers(isPrivate);
+                      setFormData({
+                        ...formData,
+                        is_public: !isPrivate,
+                        shared_user_ids: isPrivate ? formData.shared_user_ids : [],
+                      });
+                    }}
                   />
-                  <span className="text-sm font-medium text-dark-purple">Redzams citiem</span>
+                  <span className="text-sm font-medium text-dark-purple">Privāts pasākums</span>
                 </label>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/80 bg-white/75 p-4">
+            {!formData.is_public && <div className="rounded-2xl border border-white/80 bg-white/75 p-4">
               <div className="mb-3">
                 <h3 className="text-sm font-bold text-dark-purple">Kas var redzēt šo notikumu?</h3>
                 <p className="mt-1 text-xs text-muted">
@@ -416,9 +421,6 @@ function MyEvents() {
                           <div className="text-sm font-semibold text-dark-purple">
                             {user.first_name} {user.last_name}
                           </div>
-                          <div className="text-xs text-muted">
-                            {user.is_admin ? 'Administrators' : 'Lietotājs'}
-                          </div>
                         </div>
                         <span
                           className={`rounded-full px-2 py-1 text-xs font-bold ${
@@ -435,6 +437,7 @@ function MyEvents() {
                 <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
               )}
             </div>
+            }
 
             <div className="space-y-3 rounded-2xl border border-white/80 bg-white/75 p-4">
               <div className="eyebrow">🖼️ Attēls</div>

@@ -35,6 +35,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/special-days/{specialDay}', [SpecialDayController::class, 'update']);
     Route::delete('/special-days/{specialDay}', [SpecialDayController::class, 'destroy']);
 
+    Route::get('/users', [UserStatusController::class, 'getUsers']);
     Route::get('/users/status', [UserStatusController::class, 'index']);
     Route::post('/users/status', [UserStatusController::class, 'updateStatus']);
 

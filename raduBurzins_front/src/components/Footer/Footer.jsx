@@ -5,7 +5,7 @@ const quickLinks = [
   { label: 'Kalendārs', to: '/calendar' },
   { label: 'Notikumi', to: '/my-events' },
   { label: 'Profils', to: '/profile' },
-  { label: 'Ziemassvētki', to: '/christmas' },
+  // { label: 'Ziemassvētki', to: '/christmas' },
 ];
 
 function Footer() {
