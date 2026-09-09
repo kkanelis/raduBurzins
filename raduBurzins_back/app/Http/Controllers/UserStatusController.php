@@ -9,9 +9,9 @@ use Carbon\Carbon;
 
 class UserStatusController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $users = User::where('is_approved', true)
+        $users = User::where('is_approved', 1)
             ->select('id', 'first_name', 'last_name', 'date_of_birth', 'is_admin')
             ->get();
     }
@@ -19,11 +19,9 @@ class UserStatusController extends Controller
     public function updateStatus(Request $request)
     {
         $userId = $request->user()->id;
-
-        return response()->json(["message" => "Status Update"]);
     }
 
-    public function getUsers(Request $request) 
+    public function getUsers() 
     {
         $users = User::All();
 

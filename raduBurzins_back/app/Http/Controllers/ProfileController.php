@@ -59,7 +59,7 @@ class ProfileController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Profile updated successfully.',
+                'message' => 'Profils saglabāts.',
                 'user' => $user->fresh(),
             ]);
         }

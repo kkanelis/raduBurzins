@@ -15,32 +15,36 @@ use App\Http\Controllers\AlbumController;
 
 Route::post('/register', [RegisteredUserController::class, 'store']);
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
-
-Route::get('/namedays', [NamedaysController::class, 'index']);
-Route::get('/surnames', [SurnamedaysController::class, 'index']);
-
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
+    // AUTH routes
+
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
+    // Profile routes
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::post('/profile/avatar', [ProfileController::class, 'avatar']);
 
+    // Calendar days, namedays, surnames, special days routes
+    Route::get('/namedays', [NamedaysController::class, 'index']);
+    Route::get('/surnames', [SurnamedaysController::class, 'index']);
+
+    Route::get('/special-days', [SpecialDayController::class, 'index']);
     Route::post('/special-days', [SpecialDayController::class, 'store']);
     Route::get('/user/special-days', [SpecialDayController::class, 'userSpecialDays']);
     Route::put('/special-days/{specialDay}', [SpecialDayController::class, 'update']);
     Route::delete('/special-days/{specialDay}', [SpecialDayController::class, 'destroy']);
 
+    // User routes
     Route::get('/users', [UserStatusController::class, 'getUsers']);
     Route::get('/users/status', [UserStatusController::class, 'index']);
     Route::post('/users/status', [UserStatusController::class, 'updateStatus']);
 
-    Route::get('/special-days', [SpecialDayController::class, 'index']);
-
+    // Album routes
     Route::get('/albums', [AlbumController::class, 'index']);
     Route::post('/albums', [AlbumController::class, 'store']);
     Route::get('/albums/{album}', [AlbumController::class, 'show']);
@@ -52,5 +56,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/albums/{album}/photos/{photo}', [AlbumController::class, 'destroyPhoto']);
     Route::delete('/albums/{album}', [AlbumController::class, 'destroy']);
 
+    // Christmas lottery routes
     Route::get('/christmas-lottery', [ChristmasLotteryController::class, 'index']);
 });
