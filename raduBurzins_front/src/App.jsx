@@ -12,13 +12,13 @@ import "./index.css";
 
 const Info = lazy(() => import("./info/InfoPage/InfoPage"));
 const RegWelcome = lazy(() => import("./info/RegWelcome/RegWelcome"));
-const FamilyChat = lazy(() => import("./info/FamilyChat/FamilyChat"));
+const FamilyChat = lazy(() => import("./components/FamilyChat/FamilyChat"));
 const Calendar = lazy(() => import("./components/Calendar/Calendar"));
 const Terms = lazy(() => import("./info/Terms/Terms"));
 const Profile = lazy(() => import("./components/auth/Profile"));
 const ChristmasLottery = lazy(() => import("./components/Christmas/ChristmasLottery"));
 const MyEvents = lazy(() => import("./info/RegWelcome/MyEvents"));
-const Albums = lazy(() => import("./info/Albums/Albums"));
+const Albums = lazy(() => import("./components/Albums/Albums"));
 
 const AppContent = () => {
   const { user } = useAuth();
