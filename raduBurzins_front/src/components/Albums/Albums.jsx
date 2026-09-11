@@ -1,219 +1,297 @@
 import React, { useEffect, useMemo, useState } from "react";
-import BasePopup from "../BasePopoup";
+import BasePopup from "../../components/BasePopoup";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
+
+const emojiOptions = ["❤️", "😍", "🔥", "👏", "😂", "🎉", "😮", "👍"];
 
 const emptyForm = {
   title: "",
   description: "",
-  category: "Nav kategorijas",
-  emoji: "📸",
-  cover_path: "",
-  is_public: 1,
+  category: "Notikumu albums",
+  emoji: "📷",
+  is_public: true,
   shared_with_user_ids: [],
-}
+};
 
 const createPhotoEntry = (file = null) => ({
   title: "",
   note: "",
   image: file,
-})
+});
+
+const createPreviewUrl = (file) => (file ? URL.createObjectURL(file) : "");
 
 function Albums() {
-    
-    const { user } = useAuth();
-    const [users, setUsers] = useState();
-    const [albums, setAlbums] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [formData, setFormData] = useState(emptyForm);
-    const [photos, setPhotos] = useState([createPhotoEntry()]);
-    const [error, setError] = useState("");
-    const [message, setMessage] = useState("");
-    const [saving, setSaving] = useState(false);
-    const [loadingUsers, setLoadingUsers] = useState(true);
-    const [selectedAlbumId, setSelectedAlbumId] = useState("");
-    const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
-    const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const { user } = useAuth();
+  const [albums, setAlbums] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [selectedAlbumId, setSelectedAlbumId] = useState("");
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAlbumEditModal, setShowAlbumEditModal] = useState(false);
+  const [showPhotoEditModal, setShowPhotoEditModal] = useState(false);
+  const [showViewer, setShowViewer] = useState(false);
+  const [formData, setFormData] = useState(emptyForm);
+  const [photoForm, setPhotoForm] = useState({ title: "", note: "", image: null });
+  const [photos, setPhotos] = useState([createPhotoEntry()]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [reactionLoading, setReactionLoading] = useState(false);
+  const [albumSaving, setAlbumSaving] = useState(false);
+  const [deletingPhoto, setDeletingPhoto] = useState(false);
+  const [deletingAlbum, setDeletingAlbum] = useState(false);
+  const usersById = useMemo(() => new Map(users.map((user) => [String(user.id), user])), [users]);
 
-    useEffect(() => {
-      loadAlbums();
-      loadUsers();
-    }, []);
+  const selectedAlbum = useMemo(
+    () => albums.find((album) => String(album.id) === String(selectedAlbumId)) || albums[0] || null,
+    [albums, selectedAlbumId]
+  );
 
-    const selectedAlbum = useMemo(
-      () => albums.find((album) => String(album.id) === String(selectedAlbumId)) || albums[0] || null, [albums, selectedAlbumId]
-    )
+  const selectedPhoto = useMemo(() => {
+    if (!selectedAlbum?.photos?.length) return null;
+    return selectedAlbum.photos[selectedPhotoIndex] || selectedAlbum.photos[0];
+  }, [selectedAlbum, selectedPhotoIndex]);
 
-    const selectedPhoto = useMemo(() =>{
-      if (!selectedAlbum?.photos?.lenght) return null;
-      return selectedAlbum.photos[setSelectedPhotoIndex] || selectedAlbum.photos[0];
-    }, [selectedAlbum, selectedPhotoIndex]);
+  const stats = useMemo(() => {
+    const totalPhotos = albums.reduce((sum, album) => sum + (album.photos?.length || 0), 0);
+    return { albums: albums.length, photos: totalPhotos };
+  }, [albums]);
 
-    const albumCreator = selectedAlbum && String(selectedAlbum.user_id) === String(user?.id);
+  const isAlbumCreator = selectedAlbum && String(selectedAlbum.user_id) === String(user?.id);
 
-    {/* users ielāde no api */}
+  const sharedUsersLabel = useMemo(() => {
+    if (formData.is_public) return "Publisks";
+    if (formData.shared_with_user_ids.length === 0) return "Tikai izvēlētajiem cilvēkiem";
+    return `Koplietots ar ${formData.shared_with_user_ids.length} cilvēkiem`;
+  }, [formData.is_public, formData.shared_with_user_ids.length]);
 
-    const loadUsers = async () => {
-      setLoadingUsers(true);
+  const loadAlbums = async () => {
+    setLoading(true);
+    setError("");
 
-      try {
-        const response = await api.get('/api/users');
-        const users = [...(response.data || [])];
-        setUsers(users);
-      } catch (requestError) {
-        setError("Neizdevās ielādēt lietotājus");
-      } finally {
-        setLoadingUsers(false)
-      }
+    try {
+      const response = await api.get("/api/albums");
+      const nextAlbums = Array.isArray(response.data) ? response.data : [];
+      setAlbums(nextAlbums);
+      setSelectedAlbumId((current) => current || nextAlbums[0]?.id || "");
+      setSelectedPhotoIndex(0);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās ielādēt albumus.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await api.get("/api/users/status");
+      const combined = [...(response.data.online || []), ...(response.data.offline || [])];
+      const uniqueUsers = Array.from(new Map(combined.map((user) => [user.id, user])).values());
+      setUsers(uniqueUsers);
+    } catch {
+      setUsers([]);
+    }
+  };
+
+  useEffect(() => {
+    loadAlbums();
+    loadUsers();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedAlbum?.photos?.length) {
+      setSelectedPhotoIndex(0);
+      return;
     }
 
+    if (selectedPhotoIndex >= selectedAlbum.photos.length) {
+      setSelectedPhotoIndex(0);
+    }
+  }, [selectedAlbum, selectedPhotoIndex]);
 
-    // ielādē albumus
-    const loadAlbums = async () => {
-      setLoading(true);
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
-      try {
-        const response = await api.get('/api/albums')
-        const nextAlbums = Array.isArray(response.data) ? response.data : [];
-        setAlbums(nextAlbums);
-        setSelectedAlbumId((current) => current || nextAlbums[0]?.id || "");
+  const toggleSharedUser = (userId) => {
+    setFormData((prev) => {
+      const exists = prev.shared_with_user_ids.includes(userId);
+      return {
+        ...prev,
+        shared_with_user_ids: exists
+          ? prev.shared_with_user_ids.filter((id) => id !== userId)
+          : [...prev.shared_with_user_ids, userId],
+      };
+    });
+  };
+
+  const updatePhotoField = (index, field, value) => {
+    setPhotos((prev) =>
+      prev.map((photo, photoIndex) => (photoIndex === index ? { ...photo, [field]: value } : photo))
+    );
+  };
+
+  const addPhotoRow = () => setPhotos((prev) => [...prev, createPhotoEntry()]);
+
+  const removePhotoRow = (index) => {
+    setPhotos((prev) => (prev.length === 1 ? prev : prev.filter((_, photoIndex) => photoIndex !== index)));
+  };
+
+  const handleGallerySelection = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+    setPhotos((prev) => [...prev, ...files.map((file) => createPhotoEntry(file))]);
+    event.target.value = "";
+  };
+
+  const resetForm = () => {
+    setFormData(emptyForm);
+    setPhotos([createPhotoEntry()]);
+    setError("");
+    setMessage("");
+  };
+
+  const handleCreate = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setMessage("");
+
+    const validPhotos = photos.filter((photo) => photo.image);
+    if (!formData.title.trim()) {
+      setError("Albumam vajag nosaukumu.");
+      setSaving(false);
+      return;
+    }
+
+    if (validPhotos.length === 0) {
+      setError("Pievieno vismaz vienu foto.");
+      setSaving(false);
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append("title", formData.title.trim());
+    payload.append("description", formData.description.trim());
+    payload.append("category", formData.category.trim());
+    payload.append("emoji", formData.emoji.trim() || "📷");
+    payload.append("is_public", formData.is_public ? "1" : "0");
+    formData.shared_with_user_ids.forEach((userId) => payload.append("shared_with_user_ids[]", userId));
+
+    validPhotos.forEach((photo, index) => {
+      payload.append(`photos[${index}][title]`, photo.title.trim() || `Foto ${index + 1}`);
+      payload.append(`photos[${index}][note]`, photo.note.trim());
+      payload.append(`photos[${index}][image]`, photo.image);
+    });
+
+    payload.append("cover_photo_index", "0");
+
+    try {
+      const response = await api.post("/api/albums", payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const createdAlbum = response.data?.album;
+      if (createdAlbum) {
+        setAlbums((prev) => [createdAlbum, ...prev]);
+        setSelectedAlbumId(createdAlbum.id);
         setSelectedPhotoIndex(0);
-      } catch (requestError) {
-        setError(requestError);
-      } finally {
-        setLoading(false);
       }
+
+      setShowCreateModal(false);
+      resetForm();
+      setMessage("Albums izveidots veiksmīgi.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās saglabāt albumu.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddPhoto = async () => {
+    if (!selectedAlbum) return;
+
+    const nextPhoto = photos[0];
+    if (!nextPhoto?.image) {
+      setError("Izvēlies foto, ko pievienot.");
+      return;
     }
 
-    {/* Ļauj pievienot cilvēkus, ja albums ir privāts */}
-    const toggleSharedUser = (userId) => {
-      setFormData((prev) => {
-        const exists = prev.shared_with_user_ids.includes(userId);
-        return {
-          ...prev,
-          shared_with_user_ids: exists
-            ? prev.shared_with_user_ids.filter((id) => id !== userId)
-            : [...prev.shared_with_user_ids, userId],
-        };
-      });
-    };
+    setUploadingPhoto(true);
+    setError("");
+    setMessage("");
 
-    // čeko visu par albuma taisīšanu
-    const handleCreate = async (event) => {
-      event.preventDefault();
-      setSaving(true);
+    const payload = new FormData();
+    payload.append("title", nextPhoto.title.trim() || `Foto ${selectedAlbum.photos.length + 1}`);
+    payload.append("note", nextPhoto.note.trim());
+    payload.append("image", nextPhoto.image);
 
-      if (!formData.title) {
-        setError("Albumam ir nepieciešams nosaukums!")
-        setSaving(false);
-        return;
-      }
-
-      if (validPhotos.lenght === 0) {
-        setError("Albumam vajag pievienot vismaz vienu foto!");
-        setSaving(false);
-        return;
-      }
-
-      const payload = new FormData();
-      payload.append("title", formData.title.trim());
-      payload.append("description", formData.description.trim());
-      payload.append("category", formData.category.trim());
-      payload.append("emoji", formData.emoji.trim() || "📸");
-      formData.shared_with_user_ids.forEach((userId) => payload.append("shared_with_users_ids[]", userId));
-
-      validPhotos.forEach((photo, index) =>{
-        payload.append(`photos[${index}][title]`, photo.title.trim() || `Fotografija ${index + 1}`)
-        payload.append(`photos[${index}][note]`, photo.note.trim())
-        payload.append(`photos[${index}][image]`, photo.image)
+    try {
+      const response = await api.post(`/api/albums/${selectedAlbum.id}/photos`, payload, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      payload.append("cover_photo_index", "0");
-
-    }
-
-    const handleChange = (event) => {
-      const {name, value, type, checked } = event.target;
-      setFormData((prev) => ({
-        ...prev, [name]: type === "checkbox" ? checked : value,
-      }))
-    }
-
-    const handleAddPhoto = async () => {
-      if (!selectedAlbum) return
-
-      const nextPhoto = photos[0]
-      if (!nextPhoto?.image) {
-        setError("Pievieno foto")
-        return
+      const updatedAlbum = response.data?.album;
+      if (updatedAlbum) {
+        setAlbums((prev) =>
+          prev.map((album) => (String(album.id) === String(updatedAlbum.id) ? updatedAlbum : album))
+        );
+        setSelectedAlbumId(updatedAlbum.id);
+        setSelectedPhotoIndex(0);
       }
 
-      setUploadingPhoto(true)
+      setPhotos([createPhotoEntry()]);
+      setMessage("Foto pievienota veiksmīgi.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās pievienot foto.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
-      const payload = new FromData()
-      payload.append("title", nextPhoto.title.trim() || `Foto ${selectedAlbum.photos.lenght + 1}`)
-      payload.append("note", nextPhoto.note.trim())
-      payload.append("image", nextPhoto.image)
+  const handleUpdateAlbum = async (event) => {
+    event.preventDefault();
+    if (!selectedAlbum) return;
 
-        try {
-          const response = await api.post(`/api/albums/${selectedAlbum.id}/photos`, payload, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-    
-          const updatedAlbum = response.data?.album;
-          if (updatedAlbum) {
-            setAlbums((prev) =>
-              prev.map((album) => (String(album.id) === String(updatedAlbum.id) ? updatedAlbum : album))
-            );
-            setSelectedAlbumId(updatedAlbum.id);
-            setSelectedPhotoIndex(0);
-          }
-    
-          setPhotos([createPhotoEntry()]);
-          setMessage("Foto pievienota veiksmīgi.");
-        } catch (requestError) {
-          setError(requestError?.response?.data?.message || "Neizdevās pievienot foto.");
-        } finally {
-          setUploadingPhoto(false);
-        }
-      };
+    setAlbumSaving(true);
+    setError("");
+    setMessage("");
 
-    const handleUpdateAlbum = async (event) => {
-        event.preventDefault();
-        if (!selectedAlbum) return;
-    
-        setAlbumSaving(true);
-        setError("");
-        setMessage("");
-    
-        const payload = new FormData();
-        payload.append("title", formData.title.trim());
-        payload.append("description", formData.description.trim());
-        payload.append("category", formData.category.trim());
-        payload.append("emoji", formData.emoji.trim() || "📷");
-        payload.append("is_public", formData.is_public ? "1" : "0");
-        formData.shared_with_user_ids.forEach((userId) => payload.append("shared_with_user_ids[]", userId));
-        payload.append("_method", "PUT");
-    
-        try {
-          const response = await api.post(`/api/albums/${selectedAlbum.id}`, payload, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-          const updatedAlbum = response.data?.album;
-          if (updatedAlbum) {
-            setAlbums((prev) => prev.map((album) => (String(album.id) === String(updatedAlbum.id) ? updatedAlbum : album)));
-          }
-          setShowAlbumEditModal(false);
-          setMessage("Albums atjaunināts veiksmīgi.");
-        } catch (requestError) {
-          setError(requestError?.response?.data?.message || "Neizdevās atjaunināt albumu.");
-        } finally {
-          setAlbumSaving(false);
-        }
-      };
+    const payload = new FormData();
+    payload.append("title", formData.title.trim());
+    payload.append("description", formData.description.trim());
+    payload.append("category", formData.category.trim());
+    payload.append("emoji", formData.emoji.trim() || "📷");
+    payload.append("is_public", formData.is_public ? "1" : "0");
+    formData.shared_with_user_ids.forEach((userId) => payload.append("shared_with_user_ids[]", userId));
+    payload.append("_method", "PUT");
 
-      const openAlbumEditor = () => {
+    try {
+      const response = await api.post(`/api/albums/${selectedAlbum.id}`, payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const updatedAlbum = response.data?.album;
+      if (updatedAlbum) {
+        setAlbums((prev) => prev.map((album) => (String(album.id) === String(updatedAlbum.id) ? updatedAlbum : album)));
+      }
+      setShowAlbumEditModal(false);
+      setMessage("Albums atjaunināts veiksmīgi.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās atjaunināt albumu.");
+    } finally {
+      setAlbumSaving(false);
+    }
+  };
+
+  const openAlbumEditor = () => {
     if (!selectedAlbum) return;
     setFormData({
       title: selectedAlbum.title || "",
@@ -236,6 +314,140 @@ function Albums() {
     setShowPhotoEditModal(true);
   };
 
+  const persistPhotoEdit = async (event) => {
+    event.preventDefault();
+    if (!selectedAlbum || !selectedPhoto) return;
+
+    setUploadingPhoto(true);
+    setError("");
+    setMessage("");
+
+    const payload = new FormData();
+    payload.append("title", photoForm.title.trim());
+    payload.append("note", photoForm.note.trim());
+    if (photoForm.image) {
+      payload.append("image", photoForm.image);
+    }
+    payload.append("_method", "PUT");
+
+    try {
+      const response = await api.post(`/api/albums/${selectedAlbum.id}/photos/${selectedPhoto.id}`, payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const updatedAlbum = response.data?.album;
+      if (updatedAlbum) {
+        setAlbums((prev) => prev.map((album) => (String(album.id) === String(updatedAlbum.id) ? updatedAlbum : album)));
+      }
+      setShowPhotoEditModal(false);
+      setMessage("Foto atjaunināta veiksmīgi.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās atjaunināt foto.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleReaction = async (emoji) => {
+    if (!selectedAlbum || !selectedPhoto) return;
+
+    setReactionLoading(true);
+    setError("");
+
+    try {
+      const response = await api.post(`/api/albums/${selectedAlbum.id}/photos/${selectedPhoto.id}/react`, { emoji });
+      const updatedPhoto = response.data?.photo;
+      if (updatedPhoto) {
+        setAlbums((prev) =>
+          prev.map((album) => ({
+            ...album,
+            photos: (album.photos || []).map((photo) =>
+              String(album.id) === String(selectedAlbum.id) && String(photo.id) === String(updatedPhoto.id)
+                ? updatedPhoto
+                : photo
+            ),
+          }))
+        );
+      }
+      setMessage("Reakcija saglabāta.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās saglabāt reakciju.");
+    } finally {
+      setReactionLoading(false);
+    }
+  };
+
+  const removeReaction = async () => {
+    if (!selectedAlbum || !selectedPhoto) return;
+
+    setReactionLoading(true);
+    setError("");
+
+    try {
+      const response = await api.delete(`/api/albums/${selectedAlbum.id}/photos/${selectedPhoto.id}/react`);
+      const updatedPhoto = response.data?.photo;
+      if (updatedPhoto) {
+        setAlbums((prev) =>
+          prev.map((album) => ({
+            ...album,
+            photos: (album.photos || []).map((photo) =>
+              String(album.id) === String(selectedAlbum.id) && String(photo.id) === String(updatedPhoto.id)
+                ? updatedPhoto
+                : photo
+            ),
+          }))
+        );
+      }
+      setMessage("Reakcija noņemta.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās noņemt reakciju.");
+    } finally {
+      setReactionLoading(false);
+    }
+  };
+
+  const deletePhoto = async () => {
+    if (!selectedAlbum || !selectedPhoto) return;
+
+    const confirmDelete = window.confirm("Vai tiešām dzēst šo foto?");
+    if (!confirmDelete) return;
+
+    setDeletingPhoto(true);
+    setError("");
+
+    try {
+      await api.delete(`/api/albums/${selectedAlbum.id}/photos/${selectedPhoto.id}`);
+      await loadAlbums();
+      setSelectedPhotoIndex(0);
+      setMessage("Foto izdzēsta veiksmīgi.");
+      setShowViewer(false);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās dzēst foto.");
+    } finally {
+      setDeletingPhoto(false);
+    }
+  };
+
+  const deleteAlbum = async () => {
+    if (!selectedAlbum) return;
+
+    const confirmDelete = window.confirm("Vai tiešām dzēst šo albumu?");
+    if (!confirmDelete) return;
+
+    setDeletingAlbum(true);
+    setError("");
+
+    try {
+      await api.delete(`/api/albums/${selectedAlbum.id}`);
+      await loadAlbums();
+      setMessage("Albums izdzēsts veiksmīgi.");
+      setSelectedPhotoIndex(0);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās dzēst albumu.");
+    } finally {
+      setDeletingAlbum(false);
+    }
+  };
+
   const goPrevious = () => {
     if (!selectedAlbum?.photos?.length) return;
     setSelectedPhotoIndex((current) => (current - 1 + selectedAlbum.photos.length) % selectedAlbum.photos.length);
@@ -250,47 +462,6 @@ function Albums() {
     setSelectedPhotoIndex(index);
     setShowViewer(true);
   };
-
-    const resetForm = () => { 
-      setFormData(emptyForm)
-      setPhotos([createPhotoEntry()])
-    }
-
-
-    // Photo Funckijas
-    const updatePhotoField = (index, field, value) => {
-      setPhotos((prev) => 
-        prev.map((photo, photoIndex) => (photoIndex === index ? {...photo, [field]: value} : photo))
-      )
-    }
-
-    const addPhotoRow = () => setPhotos((prev) => [...prev, createPhotoEntry()]);
-    const removePhotoRow = (index) => {
-      setPhotos((prev) => (prev.lenght === 1 ? prev : prev.filter((_, photoIndex) => photoIndex !== index)))
-    }
-
-    const handleGallerySelection = (event) => {
-      const files = Array.from(event.target.files || [])
-      if (files.lenght === 0) return;
-      setPhotos((prev) => [...prev, ...files.map((file) => createPhotoEntry(file))])
-      event.target.value = ""
-    }
-
-    const createPreviewUrl = async (event) => {
-
-    }
-
-    const sharedUsersLabel = useMemo(() => {
-      if (formData.is_public) return "Publisks albums";
-      if (formData.shared_with_user_ids.lenght === 0) return "Privāts albums";
-      return `Albums dalīts ar ${formData.shared_with_user_ids.lenght} cilvēkiem`;
-    }, [formData.is_public, formData.shared_with_user_ids.lenght]);
-
-
-    const stats = useMemo(() => {
-        const totalPhotos = albums.reduce((sum, album) => sum + (album.photos?.lenght || 0), 0);
-        return {albums: albums.lenght, photos: totalPhotos};
-    }, [albums]);
 
   return (
     <div className="relative overflow-hidden">
@@ -384,7 +555,7 @@ function Albums() {
               })}
             </aside>
 
-            {/* <section className="space-y-4">
+            <section className="space-y-4">
               {selectedAlbum ? (
                 <>
                   <div className="rounded-[1.75rem] border border-white/70 bg-white/88 p-5 shadow-soft sm:p-6">
@@ -496,7 +667,7 @@ function Albums() {
                   {loading ? "Ielādē albumus..." : "Nav pieejamu albumu."}
                 </div>
               )}
-            </section> */}
+            </section>
           </div>
         </div>
       </div>
@@ -708,7 +879,7 @@ function Albums() {
         </BasePopup>
       )}
 
-      {/* {showAlbumEditModal && (
+      {showAlbumEditModal && (
         <BasePopup title="Labot albumu" onClose={() => setShowAlbumEditModal(false)} width="860px">
           <form onSubmit={handleUpdateAlbum} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -783,9 +954,9 @@ function Albums() {
             </div>
           </form>
         </BasePopup>
-      )} */}
+      )}
 
-      {/* {showPhotoEditModal && selectedPhoto ? (
+      {showPhotoEditModal && selectedPhoto ? (
         <BasePopup title="Labot foto" onClose={() => setShowPhotoEditModal(false)} width="760px">
           <form onSubmit={persistPhotoEdit} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
@@ -823,9 +994,9 @@ function Albums() {
             </div>
           </form>
         </BasePopup>
-      ) : null} */}
+      ) : null}
 
-      {/* {showViewer && selectedPhoto ? (
+      {showViewer && selectedPhoto ? (
         <div className="modal-backdrop">
           <div className="card surface-strong w-full max-w-5xl max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-4">
@@ -904,7 +1075,7 @@ function Albums() {
             ) : null}
           </div>
         </div>
-      ) : null} */}
+      ) : null}
     </div>
   );
 }

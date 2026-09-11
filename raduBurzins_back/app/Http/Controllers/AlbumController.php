@@ -29,6 +29,32 @@ class AlbumController extends Controller
         return response()->json($this->normalizeAlbum($album->load(['photos' => fn ($query) => $query->latest()])));
     }
 
+    public function update($request, Album $album) {
+        
+        $validated = $request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'category' => 'nullable|string|required|max:50',
+            'emoji' => 'nullable|string|max:10',
+            'is_public' => 'boolean',
+            'shared_with_users_ids' => 'nullable|array',
+        ]);
+
+        if (array_key_exists('shared_with_user_ids', $validated)) {
+            $album->shared_with_user_ids = array_values(array_unique(array_map(
+                'intval',
+                $validated['shared_with_user_ids'] ?? []
+            )));
+        }
+
+        $album->save();
+
+        return response()->json([
+            'message' => 'Albums atjaunināts!',
+            'album' => $this->normalizeAlbum($album->fresh(['photos' => fn ($query) => $query->latest()])),
+        ]);
+    }
+
     private function authorizeAlbum(Request $request, Album $album): void
     {
         if ($album->user_id !== $request->user()?->getKey()) {
@@ -57,7 +83,7 @@ class AlbumController extends Controller
             'id' => $photo->id,
             'album_id' => $photo->album_id,
             'path' => $photo->path,
-            'url' => $photo->path ? Storage::disk('public')->url($photo->path) : null,
+            'url' => $photo->path ? asset('storage/' . $photo->path) : null,
         ];
     }
 }
