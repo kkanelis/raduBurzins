@@ -79,6 +79,7 @@ function Albums() {
       setAlbums(nextAlbums);
       setSelectedAlbumId((current) => current || nextAlbums[0]?.id || "");
       setSelectedPhotoIndex(0);
+      console.log(response);
     } catch (requestError) {
       setError(requestError?.response?.data?.message || "Neizdevās ielādēt albumus.");
     } finally {

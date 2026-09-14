@@ -17,10 +17,7 @@ class SpecialDayController extends Controller
             ->latest()
             ->get()
             ->filter(function (SpecialDay $specialDay) use ($request, $userId) {
-                if ($request->boolean('mine')) {
-                    return (int) $specialDay->user_id === (int) $userId;
-                }
-
+                
                 if ($specialDay->is_public) {
                     return true;
                 }
@@ -94,11 +91,11 @@ class SpecialDayController extends Controller
         $this->authorizeOwnerOrPublic($specialDay, true);
 
         $validated = $request->validate([
-            'title' => 'sometimes|required|string|max:255',
+            'title' => 'sometimes|required|string|max:100',
             'description' => 'nullable|string',
             'date' => 'sometimes|required|date',
             'repeats' => 'boolean',
-            'location' => 'nullable|string|max:255',
+            'location' => 'nullable|string|max:100',
             'event_time' => 'nullable|string|max:50',
             'is_public' => 'boolean',
             'shared_with_user_ids' => 'nullable|array',

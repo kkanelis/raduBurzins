@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 
 const quickLinks = [
@@ -84,7 +83,6 @@ function Footer() {
 
         <div className="mt-6 flex flex-col gap-3 rounded-[1.5rem] border border-white/80 bg-white/85 px-4 py-4 text-sm text-muted shadow-soft sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p>&copy; {currentYear} Radu Burziņš. Visas tiesības aizsargātas.</p>
-          <p className="font-semibold text-dark-purple">Svarīgais vienuviet · skaisti · ātri · pārskatāmi</p>
         </div>
       </div>
     </footer>

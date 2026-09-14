@@ -13,6 +13,7 @@ function CreateSpecialDay({ onClose, onSuccess }) {
     description: '',
     date: null,
     repeats: false,
+    is_public: true,
     location: '',
     event_time: '',
     shared_user_ids: [],
@@ -29,7 +30,7 @@ function CreateSpecialDay({ onClose, onSuccess }) {
         const users = [...(response.data || [])];
         setUsers(users);
       } catch (err) {
-        setUsers([]);
+        setError("Neizdevās ielādēt lietotājus!")
       } finally {
         setLoadingUsers(false);
       }
@@ -59,13 +60,15 @@ function CreateSpecialDay({ onClose, onSuccess }) {
         ...formData,
         date: formData.date.toISOString().split('T')[0],
         repeats: formData.repeats ? '1' : '0',
-        is_public: false,
+        is_public: formData.is_public,
         shared_with_user_ids: formData.shared_user_ids,
       };
 
       const response = await api.post('/api/special-days', payload);
       onSuccess(response.data);
       onClose();
+
+      console.log(response);
     } catch (err) {
       setError(err.response?.data?.message || 'Neizdevās izveidot notikumu');
     }
