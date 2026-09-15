@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 
 class AlbumController extends Controller
 {
+
+    // Albuma pamata kodi
     public function index() {
         
         $albums = Album::query()
@@ -108,6 +110,33 @@ class AlbumController extends Controller
             'album' => $this->normalizeAlbum($album->fresh(['photos' => fn ($query) => $query->latest()])),
         ]);
     }
+
+    // Priekš albuma fotografiju kodi
+
+    public function addPhoto(Request $request, Album $album): JsonResponse
+    {
+        $this->authorizeAlbum($request, $album, true);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'note' => 'nullable|string',
+            'image' => 'required|image|max:8192',
+        ]);
+
+        $imagePath = $request->file('image')->store('albums/' . $album->id, 'public');
+
+        $photo = AlbumPhoto::create([
+            'album_id' => $album->id,
+            'title' => $validated['title'],
+            'note' => $validated['note'] ?? null,
+            'image_path' => $imagePath,
+            'reactions' => [],
+            'likes_count' => 0,
+        ]);
+
+    }
+
+    // Tālākās nepieciešamās kodi
 
     private function authorizeAlbum(Request $request, Album $album): void
     {
