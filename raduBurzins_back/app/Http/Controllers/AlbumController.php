@@ -111,9 +111,29 @@ class AlbumController extends Controller
         ]);
     }
 
+    public function destroy(Request $request, Album $album): JsonResponse {
+        $this->authorizeAlbum($request, $album, true);
+
+        if ($album->cover_path) {
+            Storage::disk('public')->delete($album->cover_path);
+        }
+
+        foreach ($album->photos as $photo) {
+            if ($photo->image_path) {
+                Storage::disk('public')->delete($photo->image_path);
+            }
+        }
+
+        $album->delete();
+
+        return response()->json([
+            'message' => 'Albums izdzēsts veiksmīgi.',
+        ]);
+    }
+
     // Priekš albuma fotografiju kodi
 
-    public function addPhoto(Request $request, Album $album): JsonResponse
+        public function addPhoto(Request $request, Album $album): JsonResponse
     {
         $this->authorizeAlbum($request, $album, true);
 
@@ -134,15 +154,158 @@ class AlbumController extends Controller
             'likes_count' => 0,
         ]);
 
+        if (! $album->cover_path) {
+            $album->cover_path = $photo->image_path;
+            $album->save();
+        }
+
+        return response()->json([
+            'message' => 'Foto pievienota veiksmīgi.',
+            'photo' => $this->normalizePhoto($photo),
+            'album' => $this->normalizeAlbum($album->fresh(['photos' => fn ($query) => $query->latest()])),
+        ], 201);
     }
+
+    public function updatePhoto(Request $request, Album $album, AlbumPhoto $photo): JsonResponse {
+        $this->authorizeAlbum($request, $album, true);
+        $this->authorizePhotoBelongsToAlbum($photo, $album);
+
+        $validated = $request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'note' => 'nullable|string',
+            'image' => 'nullable|image|max:8192',
+        ]);
+
+        if ($request->hasFile('image')) {
+            if ($photo->image_path) {
+                Storage::disk('public')->delete($photo->image_path);
+            }
+
+            $photo->image_path = $request->file('image')->store('albums/' . $album->id, 'public');
+        }
+
+        $photo->fill([
+            'title' => $validated['title'] ?? $photo->title,
+            'note' => array_key_exists('note', $validated) ? $validated['note'] : $photo->note,
+        ]);
+
+        $photo->save();
+
+        return response()->json([
+            'message' => 'Foto atjaunināta veiksmīgi.',
+            'photo' => $this->normalizePhoto($photo->fresh()),
+            'album' => $this->normalizeAlbum($album->fresh(['photos' => fn ($query) => $query->latest()])),
+        ]);
+    }
+
+    private function normalizePhoto(AlbumPhoto $photo): array
+    {
+        return [
+            'id' => $photo->id,
+            'title' => $photo->title,
+            'note' => $photo->note,
+            'image_path' => $photo->image_path,
+            'reactions' => $photo->reactions ?? [],
+            'likes_count' => $photo->likes_count ?? 0,
+            'created_at' => $photo->created_at,
+            'updated_at' => $photo->updated_at,
+        ];
+    }
+
+    public function destroyPhoto(Request $request, Album $album, AlbumPhoto $photo): JsonResponse {
+        $this->authorizeAlbum($request, $album, true);
+        $this->authorizePhotoBelongsToAlbum($photo, $album);
+
+        if ($photo->image_path) {
+            Storage::disk('public')->delete($photo->image_path);
+        }
+
+        $photo->delete();
+
+        return response()->json([
+            'message' => 'Foto izdzēsta veiksmīgi.',
+        ]);
+    }
+
+
+    // Reactions
+
+    public function reactToPhoto(Request $request, Album $album, AlbumPhoto $photo): JsonResponse {
+        $this->authorizeAlbum($request, $album);
+        $this->authorizePhotoBelongsToAlbum($photo, $album);
+
+        $validated = $request->validate([
+            'emoji' => 'required|string|max:16',
+        ]);
+
+        $userId = (string) $request->user()?->getKey();
+        $reactions = $photo->reactions ?? [];
+        $reactions[$userId] = $validated['emoji'];
+
+        $photo->reactions = $reactions;
+        $photo->likes_count = count($reactions);
+        $photo->save();
+
+        return response()->json([
+            'message' => 'Reakcija saglabāta veiksmīgi.',
+            'photo' => $this->normalizePhoto($photo->fresh()),
+        ]);
+    }
+
+    public function removeReaction(Request $request, Album $album, AlbumPhoto $photo): JsonResponse {
+        $this->authorizeAlbum($request, $album);
+        $this->authorizePhotoBelongsToAlbum($photo, $album);
+
+        $userId = (string) $request->user()?->getKey();
+        $reactions = $photo->reactions ?? [];
+
+        unset($reactions[$userId]);
+
+        $photo->reactions = $reactions;
+        $photo->likes_count = count($reactions);
+        $photo->save();
+
+        return response()->json([
+            'message' => 'Reakcija noņemta veiksmīgi.',
+            'photo' => $this->normalizePhoto($photo->fresh()),
+        ]);
+    }
+    
+    
 
     // Tālākās nepieciešamās kodi
 
-    private function authorizeAlbum(Request $request, Album $album): void
-    {
-        if ($album->user_id !== $request->user()?->getKey()) {
+    private function authorizeAlbum(Request $request, Album $album, bool $ownerOnly = false): void {
+        $currentUserId = $request->user()?->getKey();
+
+        if ($ownerOnly && (int) $album->user_id !== (int) $currentUserId) {
             abort(403);
         }
+
+        if (! $ownerOnly && ! $album->is_public && (int) $album->user_id !== (int) $currentUserId && ! in_array((int) $currentUserId, $this->sharedUserIds($album), true)) {
+            abort(403);
+        }
+    }
+
+    private function authorizePhotoBelongsToAlbum(AlbumPhoto $photo, Album $album): void {
+        if ((int) $photo->album_id !== (int) $album->id) {
+            abort(404);
+        }
+    }
+
+    private function sharedUserIds(Album $album): array {
+        $value = $album->shared_with_user_ids ?? [];
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? array_values(array_map('intval', $decoded)) : [];
+        }
+
+        if (is_array($value)) {
+            return array_values(array_map('intval', $value));
+        }
+
+        return [];
     }
 
     public function normalizeAlbum(Album $album): array
@@ -170,10 +333,7 @@ class AlbumController extends Controller
             'album_id' => $photo->album_id,
             'title' => $photo->title,
             'note' => $photo->note,
-            'path' => $photo->image_path,
-            'url' => $imageUrl,
-            'image_url' => $imageUrl,
-            'image_path' => $photo->image_path,
+            'image_path' => $photo->imageUrl,
             'reactions' => $photo->reactions ?? [],
             'likes_count' => (int) ($photo->likes_count ?? 0),
         ];

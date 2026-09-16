@@ -648,7 +648,7 @@ function Albums() {
                         className="card surface-strong overflow-hidden p-0 text-left transition hover:-translate-y-0.5"
                       >
                         <div className="h-44 bg-gradient-to-br from-[#e6dccf] via-white to-[#f7f3ef]">
-                          <img src={item.image_url} alt={item.title} className="h-full w-full object-cover" />
+                          <img src={item.image_path} alt={item.title} className="h-full w-full object-cover" />
                         </div>
                         <div className="p-5">
                           <div className="flex items-center justify-between gap-3">
@@ -962,7 +962,7 @@ function Albums() {
           <form onSubmit={persistPhotoEdit} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
               <div className="h-44 overflow-hidden rounded-[1.5rem] border border-white/80 bg-warm-beige/30">
-                <img src={selectedPhoto.image_url} alt={selectedPhoto.title} className="h-full w-full object-cover" />
+                <img src={selectedPhoto.image_path} alt={selectedPhoto.title} className="h-full w-full object-cover" />
               </div>
               <div className="space-y-4">
                 <label className="grid gap-2">
@@ -1012,7 +1012,7 @@ function Albums() {
             </div>
 
             <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-white/80 bg-warm-beige/20">
-              <img src={selectedPhoto.image_url} alt={selectedPhoto.title} className="max-h-[58vh] w-full object-contain bg-black/5" />
+              <img src={selectedPhoto.image_path} alt={selectedPhoto.title} className="max-h-[58vh] w-full object-contain bg-black/5" />
             </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
