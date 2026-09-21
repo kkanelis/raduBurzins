@@ -193,8 +193,6 @@ function Albums() {
       payload.append(`photos[${index}][image]`, photo.image);
     });
 
-    payload.append("cover_photo_index", "0");
-
     try {
       const response = await api.post("/api/albums", payload, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -306,6 +304,7 @@ function Albums() {
   };
 
   const openPhotoEditor = () => {
+    setShowViewer(false);
     if (!selectedPhoto) return;
     setPhotoForm({
       title: selectedPhoto.title || "",
@@ -595,6 +594,7 @@ function Albums() {
                     </div>
                   </div>
 
+                  {isAlbumCreator ? (
                   <div className="rounded-[1.75rem] border border-white/70 bg-white/88 p-5 shadow-soft sm:p-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                       <div>
@@ -638,6 +638,7 @@ function Albums() {
                       </button>
                     </div>
                   </div>
+                  ) : null}
 
                   <div className="grid gap-4 md:grid-cols-2">
                     {selectedAlbum.photos?.map((item, index) => (
@@ -1029,18 +1030,12 @@ function Albums() {
                 <button type="button" onClick={() => handleReaction("❤️")} disabled={reactionLoading} className="btn-ghost">
                   ❤️ Patīk
                 </button>
-                <button type="button" onClick={() => handleReaction("😍")} disabled={reactionLoading} className="btn-ghost">
-                  😍
-                </button>
-                <button type="button" onClick={() => handleReaction("🔥")} disabled={reactionLoading} className="btn-ghost">
-                  🔥
-                </button>
                 <button type="button" onClick={removeReaction} disabled={reactionLoading} className="btn-ghost">
                   Noņemt reakciju
                 </button>
               </div>
             </div>
-
+            {isAlbumCreator ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <button type="button" onClick={openPhotoEditor} className="btn-primary">
                 Labot foto
@@ -1049,6 +1044,7 @@ function Albums() {
                 {deletingPhoto ? "Dzēš..." : "Dzēst foto"}
               </button>
             </div>
+            ) : null}
 
             {selectedPhoto.reactions && Object.keys(selectedPhoto.reactions).length > 0 ? (
               <div className="mt-4 rounded-2xl border border-white/80 bg-white/75 p-4">

@@ -14,6 +14,11 @@ class UserStatusController extends Controller
         $users = User::where('is_approved', 1)
             ->select('id', 'first_name', 'last_name', 'date_of_birth', 'is_admin')
             ->get();
+
+        return response()->json([
+            'online' => [],
+            'offline' => $users,
+        ]);
     }
 
     public function updateStatus(Request $request)

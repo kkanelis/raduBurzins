@@ -44,6 +44,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/users/status', [UserStatusController::class, 'index']);
     Route::post('/users/status', [UserStatusController::class, 'updateStatus']);
 
+    // Family chat routes
+    Route::get('/chat-messages', [ChatMessageController::class, 'index']);
+    Route::post('/chat-messages', [ChatMessageController::class, 'store']);
+
     // Album routes
     Route::get('/albums', [AlbumController::class, 'index']);
     Route::post('/albums', [AlbumController::class, 'store']);

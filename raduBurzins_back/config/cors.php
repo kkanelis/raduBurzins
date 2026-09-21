@@ -1,6 +1,6 @@
 <?php
 return [
-    'paths' => ['api/*'],
+    'paths' => ['api/*', 'broadcasting/auth'],
     'allowed_methods' => ['*'],
     'allowed_origins' => ['*'], // In production, set this to your frontend domain
     'allowed_origins_patterns' => [],

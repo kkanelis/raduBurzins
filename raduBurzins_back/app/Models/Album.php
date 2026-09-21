@@ -14,7 +14,6 @@ class Album extends Model
         'description',
         'category',
         'emoji',
-        'cover_path',
         'is_public',
         'shared_with_user_ids',
     ];
@@ -22,10 +21,6 @@ class Album extends Model
     protected $casts = [
         'is_public' => 'boolean',
         'shared_with_user_ids' => 'array',
-    ];
-
-    protected $appends = [
-        'cover_url',
     ];
 
     public function user(): BelongsTo
@@ -38,8 +33,4 @@ class Album extends Model
         return $this->hasMany(AlbumPhoto::class);
     }
 
-    public function getCoverUrlAttribute(): ?string
-    {
-        return $this->cover_path ? asset('storage/' . $this->cover_path) : null;
-    }
 }

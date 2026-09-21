@@ -12,11 +12,16 @@ class AlbumController extends Controller
 {
 
     // Albuma pamata kodi
-    public function index() {
-        
+    public function index(Request $request) {
+        $userId = $request->user()->getKey();
+
         $albums = Album::query()
             ->with(['photos' => fn ($query) => $query->latest()])
-            ->where('user_id', request()->user()?->getKey())
+            ->where(function ($query) use ($userId) {
+                $query->where('user_id', $userId)
+                    ->orWhere('is_public', true)
+                    ->orWhereJsonContains('shared_with_user_ids', $userId);
+            })
             ->latest()
             ->get()
             ->map(fn (Album $album) => $this->normalizeAlbum($album));
@@ -42,7 +47,6 @@ class AlbumController extends Controller
             'photos.*.title' => 'nullable|string|max:100',
             'photos.*.note' => 'nullable|string|max:255',
             'photos.*.image' => 'required_with:photos|image|max:8192',
-            'cover_photo_index' => 'nullable|integer',
         ]);
 
         $album = Album::create([
@@ -52,7 +56,7 @@ class AlbumController extends Controller
             'category' => $validated['category'] ?? null,
             'emoji' => $validated['emoji'] ?? null,
             'is_public' => $validated['is_public'] ?? true,
-            'shared_with_user_ids' => array_values(array_unique(array_map( 'intval', $validated['shared_with_users_ids'] ?? [] ))),
+            'shared_with_user_ids' => array_values(array_unique(array_map('intval', $validated['shared_with_user_ids'] ?? []))),
         ]);
 
         $photoPaths = [];
@@ -63,20 +67,13 @@ class AlbumController extends Controller
             $photo = AlbumPhoto::create([
                 'album_id' => $album->id,
                 'title' => $request->input("photos.$photo.title"),
-                'note' => $request->input("photo.$photo.note"),
+                'note' => $request->input("photos.$photo.note"),
                 'image_path' => $imagePath,
                 'reactions' => [],
-                'likes_count',
+                'likes_count' => 0,
             ]);
 
             $photoPaths[] = $photo->image_path;
-        }
-
-        if(!empty($photoPaths)) {
-            $coverIndex = (int) ($validated['cover_photo_index'] ?? 0);
-            $coverPath = $photoPaths[$coverIndex] ?? $photoPaths[0];
-            $album->cover_path = $coverPath;
-            $album->save();
         }
 
         return response()->json([
@@ -85,24 +82,26 @@ class AlbumController extends Controller
         ]);
     }
 
-    public function update($request, Album $album) {
-        
+    public function update(Request $request, Album $album): JsonResponse {
+        $this->authorizeAlbum($request, $album, true);
+
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:100',
             'description' => 'nullable|string',
-            'category' => 'nullable|string|required|max:50',
+            'category' => 'nullable|string|max:50',
             'emoji' => 'nullable|string|max:10',
             'is_public' => 'boolean',
-            'shared_with_users_ids' => 'nullable|array',
+            'shared_with_user_ids' => 'nullable|array',
         ]);
 
         if (array_key_exists('shared_with_user_ids', $validated)) {
-            $album->shared_with_user_ids = array_values(array_unique(array_map(
+            $validated['shared_with_user_ids'] = array_values(array_unique(array_map(
                 'intval',
                 $validated['shared_with_user_ids'] ?? []
             )));
         }
 
+        $album->fill($validated);
         $album->save();
 
         return response()->json([
@@ -113,10 +112,6 @@ class AlbumController extends Controller
 
     public function destroy(Request $request, Album $album): JsonResponse {
         $this->authorizeAlbum($request, $album, true);
-
-        if ($album->cover_path) {
-            Storage::disk('public')->delete($album->cover_path);
-        }
 
         foreach ($album->photos as $photo) {
             if ($photo->image_path) {
@@ -153,11 +148,6 @@ class AlbumController extends Controller
             'reactions' => [],
             'likes_count' => 0,
         ]);
-
-        if (! $album->cover_path) {
-            $album->cover_path = $photo->image_path;
-            $album->save();
-        }
 
         return response()->json([
             'message' => 'Foto pievienota veiksmīgi.',
@@ -204,7 +194,7 @@ class AlbumController extends Controller
             'id' => $photo->id,
             'title' => $photo->title,
             'note' => $photo->note,
-            'image_path' => $photo->image_path,
+            'image_path' => $photo->image_url,
             'reactions' => $photo->reactions ?? [],
             'likes_count' => $photo->likes_count ?? 0,
             'created_at' => $photo->created_at,
@@ -315,7 +305,11 @@ class AlbumController extends Controller
             'name' => $album->title,
             'title' => $album->title,
             'description' => $album->description,
+            'category' => $album->category,
+            'emoji' => $album->emoji,
             'user_id' => $album->user_id,
+            'is_public' => (bool) $album->is_public,
+            'shared_with_user_ids' => $this->sharedUserIds($album),
             'created_at' => $album->created_at?->toDateTimeString(),
             'updated_at' => $album->updated_at?->toDateTimeString(),
             'photos' => $album->photos
@@ -333,7 +327,7 @@ class AlbumController extends Controller
             'album_id' => $photo->album_id,
             'title' => $photo->title,
             'note' => $photo->note,
-            'image_path' => $photo->imageUrl,
+            'image_path' => $imageUrl,
             'reactions' => $photo->reactions ?? [],
             'likes_count' => (int) ($photo->likes_count ?? 0),
         ];
