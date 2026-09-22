@@ -41,6 +41,7 @@ class ChatMessageController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'client_message_id' => 'nullable|string|max:80',
             'text' => 'nullable|string|max:255',
             'photo' => 'nullable|image|max:8192',
             'photo_name' => 'nullable|string|max:255',
@@ -48,6 +49,19 @@ class ChatMessageController extends Controller
 
         if (blank($validated['text'] ?? null) && ! $request->hasFile('photo')) {
             return response()->json(['message' => 'Ziņai vajag tekstu vai attēlu.'], 422);
+        }
+
+        if (! empty($validated['client_message_id'])) {
+            $existingMessage = FamilyChatMessage::query()
+                ->where('user_id', $request->user()->id)
+                ->where('client_message_id', $validated['client_message_id'])
+                ->first();
+
+            if ($existingMessage) {
+                return response()->json([
+                    'message' => $this->normalize($existingMessage->load('user:id,first_name,last_name')),
+                ]);
+            }
         }
 
         Log::info('Family chat message received', [
@@ -64,6 +78,7 @@ class ChatMessageController extends Controller
 
         $message = FamilyChatMessage::create([
             'user_id' => $request->user()->id,
+            'client_message_id' => $validated['client_message_id'] ?? null,
             'text' => $validated['text'] ?? null,
             'photo_path' => $photoPath,
             'photo_name' => $validated['photo_name'] ?? null,
@@ -86,6 +101,7 @@ class ChatMessageController extends Controller
     {
         return [
             'id' => $message->id,
+            'clientMessageId' => $message->client_message_id,
             'fromUserId' => $message->user_id,
             'fromName' => trim(($message->user?->first_name ?? '') . ' ' . ($message->user?->last_name ?? '')) ?: 'Lietotājs',
             'text' => $message->text,

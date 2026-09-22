@@ -31,6 +31,7 @@ class FamilyChatMessageCreated implements ShouldBroadcastNow
     {
         return [
             'id' => $this->message->id,
+            'clientMessageId' => $this->message->client_message_id,
             'fromUserId' => $this->message->user_id,
             'fromName' => trim(($this->message->user?->first_name ?? '') . ' ' . ($this->message->user?->last_name ?? '')) ?: 'Lietotājs',
             'text' => $this->message->text,

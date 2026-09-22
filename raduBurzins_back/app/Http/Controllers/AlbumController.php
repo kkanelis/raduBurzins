@@ -59,7 +59,6 @@ class AlbumController extends Controller
             'shared_with_user_ids' => array_values(array_unique(array_map('intval', $validated['shared_with_user_ids'] ?? []))),
         ]);
 
-        $photoPaths = [];
         $photos = $request->file('photos', []);
 
         foreach ($photos as $photo => $photoData) {
@@ -72,8 +71,6 @@ class AlbumController extends Controller
                 'reactions' => [],
                 'likes_count' => 0,
             ]);
-
-            $photoPaths[] = $photo->image_path;
         }
 
         return response()->json([

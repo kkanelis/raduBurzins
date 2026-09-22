@@ -46,14 +46,7 @@ class SpecialDayController extends Controller
             'is_public' => 'boolean',
             'shared_with_user_ids' => 'nullable|array',
             'shared_with_user_ids.*' => 'integer',
-            'image' => 'nullable|image|max:4096',
         ]);
-
-        $imagePath = null;
-
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('special-days', 'public');
-        }
 
         $specialDay = SpecialDay::create([
             'user_id' => $request->user()?->getKey(),
@@ -63,7 +56,6 @@ class SpecialDayController extends Controller
             'repeats' => $validated['repeats'] ?? false,
             'location' => $validated['location'] ?? null,
             'event_time' => $validated['event_time'] ?? null,
-            'image_path' => $imagePath,
             'is_public' => $validated['is_public'] ?? true,
         ]);
 
@@ -100,22 +92,7 @@ class SpecialDayController extends Controller
             'is_public' => 'boolean',
             'shared_with_user_ids' => 'nullable|array',
             'shared_with_user_ids.*' => 'integer',
-            'image' => 'nullable|image|max:4096',
-            'remove_image' => 'nullable|boolean',
         ]);
-
-        if ($request->boolean('remove_image') && $specialDay->image_path) {
-            Storage::disk('public')->delete($specialDay->image_path);
-            $specialDay->image_path = null;
-        }
-
-        if ($request->hasFile('image')) {
-            if ($specialDay->image_path) {
-                Storage::disk('public')->delete($specialDay->image_path);
-            }
-
-            $specialDay->image_path = $request->file('image')->store('special-days', 'public');
-        }
 
         $specialDay->fill([
             'title' => $validated['title'] ?? $specialDay->title,
@@ -146,10 +123,6 @@ class SpecialDayController extends Controller
     {
         $this->authorizeOwnerOrPublic($specialDay, true);
 
-        if ($specialDay->image_path) {
-            Storage::disk('public')->delete($specialDay->image_path);
-        }
-
         $specialDay->delete();
 
         return response()->json([
@@ -173,7 +146,6 @@ class SpecialDayController extends Controller
     {
         $data = $specialDay->toArray();
         $data['shared_with_user_ids'] = $this->sharedUserIds($specialDay);
-        $data['image_url'] = $specialDay->image_path ? asset('storage/' . $specialDay->image_path) : null;
 
         return $data;
     }

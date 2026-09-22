@@ -32,6 +32,7 @@ function Albums() {
   const [showAlbumEditModal, setShowAlbumEditModal] = useState(false);
   const [showPhotoEditModal, setShowPhotoEditModal] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
+  const [showAddPhotoPanel, setShowAddPhotoPanel] = useState(false);
   const [formData, setFormData] = useState(emptyForm);
   const [photoForm, setPhotoForm] = useState({ title: "", note: "", image: null });
   const [photos, setPhotos] = useState([createPhotoEntry()]);
@@ -45,7 +46,6 @@ function Albums() {
   const [deletingPhoto, setDeletingPhoto] = useState(false);
   const [deletingAlbum, setDeletingAlbum] = useState(false);
   const usersById = useMemo(() => new Map(users.map((user) => [String(user.id), user])), [users]);
-
   const selectedAlbum = useMemo(
     () => albums.find((album) => String(album.id) === String(selectedAlbumId)) || albums[0] || null,
     [albums, selectedAlbumId]
@@ -69,6 +69,10 @@ function Albums() {
     return `Koplietots ar ${formData.shared_with_user_ids.length} cilvēkiem`;
   }, [formData.is_public, formData.shared_with_user_ids.length]);
 
+
+  // Albuma funkcijas
+
+  
   const loadAlbums = async () => {
     setLoading(true);
     setError("");
@@ -215,47 +219,6 @@ function Albums() {
     }
   };
 
-  const handleAddPhoto = async () => {
-    if (!selectedAlbum) return;
-
-    const nextPhoto = photos[0];
-    if (!nextPhoto?.image) {
-      setError("Izvēlies foto, ko pievienot.");
-      return;
-    }
-
-    setUploadingPhoto(true);
-    setError("");
-    setMessage("");
-
-    const payload = new FormData();
-    payload.append("title", nextPhoto.title.trim() || `Foto ${selectedAlbum.photos.length + 1}`);
-    payload.append("note", nextPhoto.note.trim());
-    payload.append("image", nextPhoto.image);
-
-    try {
-      const response = await api.post(`/api/albums/${selectedAlbum.id}/photos`, payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      const updatedAlbum = response.data?.album;
-      if (updatedAlbum) {
-        setAlbums((prev) =>
-          prev.map((album) => (String(album.id) === String(updatedAlbum.id) ? updatedAlbum : album))
-        );
-        setSelectedAlbumId(updatedAlbum.id);
-        setSelectedPhotoIndex(0);
-      }
-
-      setPhotos([createPhotoEntry()]);
-      setMessage("Foto pievienota veiksmīgi.");
-    } catch (requestError) {
-      setError(requestError?.response?.data?.message || "Neizdevās pievienot foto.");
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
   const handleUpdateAlbum = async (event) => {
     event.preventDefault();
     if (!selectedAlbum) return;
@@ -303,6 +266,77 @@ function Albums() {
     setShowAlbumEditModal(true);
   };
 
+  const deleteAlbum = async () => {
+    if (!selectedAlbum) return;
+
+    const confirmDelete = window.confirm("Vai tiešām dzēst šo albumu?");
+    if (!confirmDelete) return;
+
+    setDeletingAlbum(true);
+    setError("");
+
+    try {
+      await api.delete(`/api/albums/${selectedAlbum.id}`);
+      await loadAlbums();
+      setMessage("Albums izdzēsts veiksmīgi.");
+      setSelectedPhotoIndex(0);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās dzēst albumu.");
+    } finally {
+      setDeletingAlbum(false);
+    }
+  };
+
+
+  // Fotografiju funkcijas
+
+
+  const handleAddPhoto = async () => {
+    if (!selectedAlbum) return;
+
+    const photosToUpload = photos.filter((photo) => photo.image);
+    if (photosToUpload.length === 0) {
+      setError("Izvēlies foto, ko pievienot.");
+      return;
+    }
+
+    setUploadingPhoto(true);
+    setError("");
+    setMessage("");
+
+    try {
+      let updatedAlbum = null;
+
+      for (const [index, photo] of photosToUpload.entries()) {
+        const payload = new FormData();
+        payload.append("title", photo.title.trim() || `Foto ${selectedAlbum.photos.length + index + 1}`);
+        payload.append("note", photo.note.trim());
+        payload.append("image", photo.image);
+
+        const response = await api.post(`/api/albums/${selectedAlbum.id}/photos`, payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        updatedAlbum = response.data?.album || updatedAlbum;
+      }
+
+      if (updatedAlbum) {
+        setAlbums((prev) => prev.map((album) => (
+          String(album.id) === String(updatedAlbum.id) ? updatedAlbum : album
+        )));
+        setSelectedAlbumId(updatedAlbum.id);
+        setSelectedPhotoIndex(0);
+      }
+
+      setPhotos([createPhotoEntry()]);
+      setShowAddPhotoPanel(false);
+      setMessage("Foto pievienota veiksmīgi.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās pievienot foto.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const openPhotoEditor = () => {
     setShowViewer(false);
     if (!selectedPhoto) return;
@@ -347,6 +381,47 @@ function Albums() {
     }
   };
 
+  const deletePhoto = async () => {
+    if (!selectedAlbum || !selectedPhoto) return;
+
+    const confirmDelete = window.confirm("Vai tiešām dzēst šo foto?");
+    if (!confirmDelete) return;
+
+    setDeletingPhoto(true);
+    setError("");
+
+    try {
+      await api.delete(`/api/albums/${selectedAlbum.id}/photos/${selectedPhoto.id}`);
+      await loadAlbums();
+      setSelectedPhotoIndex(0);
+      setMessage("Foto izdzēsta veiksmīgi.");
+      setShowViewer(false);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Neizdevās dzēst foto.");
+    } finally {
+      setDeletingPhoto(false);
+    }
+  };
+
+  const goPrevious = () => {
+    if (!selectedAlbum?.photos?.length) return;
+    setSelectedPhotoIndex((current) => (current - 1 + selectedAlbum.photos.length) % selectedAlbum.photos.length);
+  };
+
+  const goNext = () => {
+    if (!selectedAlbum?.photos?.length) return;
+    setSelectedPhotoIndex((current) => (current + 1) % selectedAlbum.photos.length);
+  };
+
+  const openViewerAt = (index) => {
+    setSelectedPhotoIndex(index);
+    setShowViewer(true);
+  };
+
+
+  // Reakciju funkcijas
+  
+  
   const handleReaction = async (emoji) => {
     if (!selectedAlbum || !selectedPhoto) return;
 
@@ -403,64 +478,6 @@ function Albums() {
     } finally {
       setReactionLoading(false);
     }
-  };
-
-  const deletePhoto = async () => {
-    if (!selectedAlbum || !selectedPhoto) return;
-
-    const confirmDelete = window.confirm("Vai tiešām dzēst šo foto?");
-    if (!confirmDelete) return;
-
-    setDeletingPhoto(true);
-    setError("");
-
-    try {
-      await api.delete(`/api/albums/${selectedAlbum.id}/photos/${selectedPhoto.id}`);
-      await loadAlbums();
-      setSelectedPhotoIndex(0);
-      setMessage("Foto izdzēsta veiksmīgi.");
-      setShowViewer(false);
-    } catch (requestError) {
-      setError(requestError?.response?.data?.message || "Neizdevās dzēst foto.");
-    } finally {
-      setDeletingPhoto(false);
-    }
-  };
-
-  const deleteAlbum = async () => {
-    if (!selectedAlbum) return;
-
-    const confirmDelete = window.confirm("Vai tiešām dzēst šo albumu?");
-    if (!confirmDelete) return;
-
-    setDeletingAlbum(true);
-    setError("");
-
-    try {
-      await api.delete(`/api/albums/${selectedAlbum.id}`);
-      await loadAlbums();
-      setMessage("Albums izdzēsts veiksmīgi.");
-      setSelectedPhotoIndex(0);
-    } catch (requestError) {
-      setError(requestError?.response?.data?.message || "Neizdevās dzēst albumu.");
-    } finally {
-      setDeletingAlbum(false);
-    }
-  };
-
-  const goPrevious = () => {
-    if (!selectedAlbum?.photos?.length) return;
-    setSelectedPhotoIndex((current) => (current - 1 + selectedAlbum.photos.length) % selectedAlbum.photos.length);
-  };
-
-  const goNext = () => {
-    if (!selectedAlbum?.photos?.length) return;
-    setSelectedPhotoIndex((current) => (current + 1) % selectedAlbum.photos.length);
-  };
-
-  const openViewerAt = (index) => {
-    setSelectedPhotoIndex(index);
-    setShowViewer(true);
   };
 
   return (
@@ -578,34 +595,31 @@ function Albums() {
 
                       <div className="flex flex-wrap gap-2">
                         {isAlbumCreator ? (
-                          <>
+                          <div>
                             <button type="button" onClick={openAlbumEditor} className="btn-ghost px-4 py-2 text-sm">
                               Labot albumu
                             </button>
                             <button type="button" onClick={deleteAlbum} disabled={deletingAlbum} className="btn-ghost px-4 py-2 text-sm">
                               {deletingAlbum ? "Dzēš..." : "Dzēst albumu"}
                             </button>
-                          </>
+                            <button type="button" onClick={() => setShowAddPhotoPanel((current) => !current)} className="btn-ghost px-4 py-2 text-sm">
+                              {showAddPhotoPanel ? "Aizvērt foto pievienošanu" : "Pievienot vēl foto"}
+                            </button>
+                          </div>
                         ) : null}
-                        <div className="rounded-2xl border border-white/80 bg-white/75 px-4 py-3 text-sm font-semibold text-dark-purple">
-                          {selectedAlbum.photos?.length || 0} foto
-                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {isAlbumCreator ? (
+                  {isAlbumCreator && showAddPhotoPanel ? (
                   <div className="rounded-[1.75rem] border border-white/70 bg-white/88 p-5 shadow-soft sm:p-6">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <h3 className="text-xl font-black text-dark-purple">Pievienot vēl foto</h3>
                         <p className="mt-2 text-sm text-muted">
                           Atver vienu reizi un izvēlies vairākus foto failus. Tos vari pielāgot vai pievienot vēlāk.
                         </p>
                       </div>
-                      <button type="button" onClick={handleAddPhoto} disabled={uploadingPhoto} className="btn-primary">
-                        {uploadingPhoto ? "Saglabā..." : "Pievienot foto"}
-                      </button>
                     </div>
 
                     <div className="mt-4 rounded-[1.5rem] border border-dashed border-medium-purple/25 bg-white/70 p-4">
@@ -632,9 +646,52 @@ function Albums() {
                       </p>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      <button type="button" onClick={addPhotoRow} className="btn-ghost">
-                        + Pievienot vēl vienu foto
+                    {photos.some((photo) => photo.image) ? (
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        {photos.map((photo, index) => {
+                          if (!photo.image) return null;
+
+                          return (
+                            <div key={`${photo.image.name}-${index}`} className="rounded-2xl border border-[#eee5dc] bg-[#fcfaf8] p-3">
+                              <div className="flex items-start gap-3">
+                                <img
+                                  src={createPreviewUrl(photo.image)}
+                                  alt={photo.image.name}
+                                  className="h-20 w-20 shrink-0 rounded-xl object-cover"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-bold text-dark-purple">{photo.image.name}</p>
+                                  <p className="mt-1 text-xs text-muted">
+                                    {(photo.image.size / 1024 / 1024).toFixed(2)} MB
+                                  </p>
+                                </div>
+                                <button type="button" onClick={() => removePhotoRow(index)} className="btn-ghost px-2 py-1 text-xs">
+                                  Noņemt
+                                </button>
+                              </div>
+                              <div className="mt-3 grid gap-2">
+                                <input
+                                  value={photo.title}
+                                  onChange={(event) => updatePhotoField(index, "title", event.target.value)}
+                                  className="input-field"
+                                  placeholder="Foto nosaukums (nav obligāti)"
+                                />
+                                <input
+                                  value={photo.note}
+                                  onChange={(event) => updatePhotoField(index, "note", event.target.value)}
+                                  className="input-field"
+                                  placeholder="Piezīme (nav obligāti)"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+
+                    <div className="mt-5 flex justify-center border-t border-[#eee5dc] pt-4">
+                      <button type="button" onClick={handleAddPhoto} disabled={uploadingPhoto} className="btn-primary px-20 py-2">
+                        {uploadingPhoto ? "Saglabā..." : "Pievienot foto"}
                       </button>
                     </div>
                   </div>

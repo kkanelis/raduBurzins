@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -38,23 +39,20 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): JsonResponse|RedirectResponse
     {
         $user = $request->user();
-        $validated = $request->validated();
+        $validated = $request->validated([
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'nickname' => 'nullable|string|max:100',
+            'phone' => 'nullable|integer|max:8',
+            'date_of_birth' => 'nullable|date',
+        ]);
 
         $user->fill($validated);
 
-        // if ($request->hasFile('avatar')) {
-        //     if ($user->avatar_path) {
-        //         Storage::disk('public')->delete($user->avatar_path);
-        //     }
-
-        //     $avatarPath = $request->file('avatar')->store('avatars', 'public');
-        //     $user->avatar_path = $avatarPath;
-        // }
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
+        if ($request->hasFile('avatar')) {
+            $this->replaceAvatar($user, $request);
         }
-
+        
         $user->save();
 
         if ($request->expectsJson()) {
@@ -65,5 +63,30 @@ class ProfileController extends Controller
         }
 
         return redirect()->route('profile.edit');
+    }
+
+    public function avatar(Request $request): JsonResponse
+    {
+        $request->validate([
+            'avatar' => ['nullable', 'image', 'max:2048'],
+        ]);
+
+        $user = $request->user();
+        $this->replaceAvatar($user, $request);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Avatar updated successfully.',
+            'user' => $user->fresh(),
+        ]);
+    }
+
+    private function replaceAvatar(User $user, Request $request): void
+    {
+        if ($user->avatar_path) {
+            Storage::disk('public')->delete($user->avatar_path);
+        }
+
+        $user->avatar_path = $request->file('avatar')->store('avatars', 'public');
     }
 }

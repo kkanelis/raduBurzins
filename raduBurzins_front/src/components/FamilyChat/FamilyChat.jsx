@@ -16,8 +16,6 @@ const formatTime = (dateString) =>
 function FamilyChat() {
   const { user } = useAuth();
   const fileInputRef = useRef(null);
-  const [onlineUsers, setOnlineUsers] = useState([]);
-  const [offlineUsers, setOfflineUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [selectedPhotoName, setSelectedPhotoName] = useState("");
@@ -25,8 +23,6 @@ function FamilyChat() {
   const [photoFile, setPhotoFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-
-  const members = useMemo(() => [...onlineUsers, ...offlineUsers], [onlineUsers, offlineUsers]);
 
   const clearPhoto = () => {
     setSelectedPhotoName("");
@@ -46,18 +42,6 @@ function FamilyChat() {
       setPhotoFile(file);
     };
     reader.readAsDataURL(file);
-  };
-
-  const fetchUsers = async () => {
-    try {
-      const response = await api.get("/api/users/status");
-      setOnlineUsers(Array.isArray(response.data.online) ? response.data.online : []);
-      setOfflineUsers(Array.isArray(response.data.offline) ? response.data.offline : []);
-    } catch (error) {
-      console.error("Failed:", error);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const fetchMessages = async () => {
@@ -81,6 +65,7 @@ function FamilyChat() {
     const pendingId = `pending-${Date.now()}`;
     const pendingMessage = {
       id: pendingId,
+      clientMessageId: pendingId,
       fromUserId: user.id,
       fromName: `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || "Tu",
       text,
@@ -100,19 +85,23 @@ function FamilyChat() {
       if (hasPhoto) {
         const payload = new FormData();
         if (text) payload.append("text", text);
+        payload.append("client_message_id", pendingId);
         payload.append("photo", photoFile);
         payload.append("photo_name", selectedPhotoName);
         response = await api.post("/api/chat-messages", payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } else {
-        response = await api.post("/api/chat-messages", { text });
+        response = await api.post("/api/chat-messages", {
+          text,
+          client_message_id: pendingId,
+        });
       }
 
       const createdMessage = response.data?.message;
       if (createdMessage) {
         setMessages((current) => current.map((message) => (
-          message.id === pendingId ? createdMessage : message
+          message.clientMessageId === pendingId ? createdMessage : message
         )));
       }
       console.groupEnd();
@@ -130,13 +119,10 @@ function FamilyChat() {
 
     const initialize = async () => {
       setLoading(true);
-      await fetchUsers();
       await fetchMessages();
     };
 
     initialize();
-    const usersInterval = setInterval(fetchUsers, 30000);
-
     const echo = getEcho();
     const channel = echo.private("family-chat");
     channel.listen(".message.created", (message) => {
@@ -144,6 +130,13 @@ function FamilyChat() {
         const existingIndex = current.findIndex((item) => String(item.id) === String(message.id));
         if (existingIndex >= 0) {
           return current.map((item, index) => (index === existingIndex ? message : item));
+        }
+
+        const clientIndex = message.clientMessageId
+          ? current.findIndex((item) => item.clientMessageId === message.clientMessageId)
+          : -1;
+        if (clientIndex >= 0) {
+          return current.map((item, index) => (index === clientIndex ? message : item));
         }
 
         const pendingIndex = current.findIndex((item) => (
@@ -161,7 +154,6 @@ function FamilyChat() {
     });
 
     return () => {
-      clearInterval(usersInterval);
       echo.leave("private-family-chat");
     };
   }, [user]);
@@ -171,7 +163,6 @@ function FamilyChat() {
       <div className="pointer-events-none absolute inset-0 hero-grid opacity-40" />
 
       <div className="section-shell relative py-8 sm:py-12">
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
           <section className="flex min-h-[680px] flex-col overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 shadow-soft backdrop-blur">
             <div className="border-b border-[#eee5dc] bg-gradient-to-r from-[#382d5b] to-[#58467e] px-5 py-6 text-white sm:px-8">
               <div className="flex items-start justify-between gap-4">
@@ -243,32 +234,7 @@ function FamilyChat() {
               </div>
             </form>
           </section>
-
-          <aside className="h-fit rounded-[2rem] border border-white/80 bg-white/90 p-5 shadow-soft sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9b8f86]">Ģimene</p>
-                <h2 className="mt-1 text-xl font-black text-[#382d5b]">Tiešsaistē</h2>
-              </div>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">●</span>
-            </div>
-            <div className="mt-5 space-y-3">
-              {onlineUsers.length > 0 ? onlineUsers.map((member) => (
-                <div key={member.id} className="flex items-center gap-3 rounded-2xl border border-[#eee5dc] bg-[#fcfaf8] p-3">
-                  <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e8e0f0] text-sm font-black text-[#58467e]">
-                    {(member.first_name?.[0] || "") + (member.last_name?.[0] || "")}
-                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-bold text-[#382d5b]">{getDisplayName(member)}</div>
-                    <div className="text-xs text-emerald-600">Tiešsaistē</div>
-                  </div>
-                </div>
-              )) : <div className="rounded-2xl bg-[#fcfaf8] p-4 text-sm text-[#9b8f86]">Neviens nav tiešsaistē.</div>}
-            </div>
-          </aside>
         </div>
-      </div>
     </div>
   );
 }

@@ -36,11 +36,6 @@ const ChristmasLottery = () => {
             <div className="max-w-3xl mx-auto card text-center animate-pulse">🎄 Ielādējas...</div>
         </div>
     );
-    if (error) return (
-        <div className="py-12 px-4">
-            <div className="max-w-3xl mx-auto card text-center text-red-600">❌ {error}</div>
-        </div>
-    );
 
     const currentYear = new Date().getFullYear();
 
@@ -69,11 +64,6 @@ const ChristmasLottery = () => {
                     <h1 className="text-3xl sm:text-5xl font-bold mb-2">
                         🎄 Ziemassvētki {currentYear} 🎄
                     </h1>
-                    <div className="flex justify-center gap-3 text-2xl">
-                        <span className="animate-bounce" style={{ animationDelay: '0s' }}>❄️</span>
-                        <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>✨</span>
-                        <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>🎁</span>
-                    </div>
                 </div>
 
                 <div className="card backdrop-blur-sm border border-medium-purple/30 shadow-2xl">
@@ -85,7 +75,7 @@ const ChristmasLottery = () => {
 
                             {!revealed ? (
                                 <div className="space-y-6">
-                                    <p className="text-sm sm:text-base text-medium-purple font-semibold">Spied uz dāvanu, lai atklātu savas noslēpumu! ✨</p>
+                                    <p className="text-sm sm:text-base text-medium-purple font-semibold">Spied uz dāvanu! ✨</p>
                                     <button
                                         onClick={handleReveal}
                                         role="button"
@@ -99,7 +89,6 @@ const ChristmasLottery = () => {
                                     >
                                         🎁
                                     </button>
-                                    <p className="text-xs sm:text-sm text-light-purple">Rūpīgi atvērt 🎄</p>
                                 </div>
                             ) : (
                                 <div className="space-y-6 animate-fadeIn">
@@ -111,16 +100,7 @@ const ChristmasLottery = () => {
                                         <p className="text-sm sm:text-base text-medium-purple mb-2">
                                             ✨ Tu būsi viņa/viņš slepenais vecīts! ✨
                                         </p>
-                                        <p className="text-xs sm:text-sm text-light-purple mt-4 pt-4 border-t border-medium-purple/30">
-                                            💝 Dāvanas ieteicamā vērtība: līdz 20 EUR
-                                        </p>
                                     </div>
-                                    <button
-                                        onClick={() => setRevealed(false)}
-                                        className="px-4 py-2 rounded-lg bg-medium-purple/20 hover:bg-medium-purple/40 text-medium-purple font-semibold transition"
-                                    >
-                                        🎁 Paslēpt atkal
-                                    </button>
                                 </div>
                             )}
                         </div>

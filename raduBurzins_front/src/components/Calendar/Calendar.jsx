@@ -20,6 +20,8 @@ const MONTH_NAMES = [
 
 const WEEKDAY_LABELS = ['P', 'O', 'T', 'C', 'P', 'S', 'S'];
 
+// Kalendāra palīgfunkcijas
+
 function formatDateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -122,6 +124,8 @@ function Calendar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Kalendāra datu funkcijas
+
   useEffect(() => {
     const loadCalendarData = async () => {
       setLoading(true);
@@ -207,6 +211,8 @@ function Calendar() {
     return map;
   }, [surnameDaysData]);
 
+  // Kalendāra navigācijas funkcijas
+
   const handlePreviousMonth = () => {
     setSelectedDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
@@ -218,6 +224,8 @@ function Calendar() {
   const handleToday = () => {
     setSelectedDate(new Date());
   };
+
+  // Dienas detaļu funkcijas
 
   const openDay = (date) => {
     const fullKey = formatDateKey(date);
@@ -448,7 +456,6 @@ function Calendar() {
                     uniqueDayBirthdays.map((user) => (
                       <div key={user.id} className="rounded-xl bg-[#fff3ec] px-3 py-2 text-sm font-semibold text-dark-purple">
                         {user.first_name} {user.last_name}
-                        <div className="text-xs text-muted">{formatBirthdayDate(user.date_of_birth)}</div>
                       </div>
                     ))
                   ) : (

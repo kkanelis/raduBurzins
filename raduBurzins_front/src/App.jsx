@@ -32,7 +32,7 @@ const AppContent = () => {
             <UserSidebar />
           </div>
         )} */}
-        <main className="flex-1 w-full">
+        <main className={`flex-1 w-full ${user ? "lg:ml-72" : ""}`}>
           <Suspense
             fallback={
               <div className="section-shell py-10">
@@ -113,7 +113,7 @@ const AppContent = () => {
           </Suspense>
         </main>
       </div>
-      {user && <Footer />}
+      {user && <div className="lg:ml-72"><Footer /></div>}
     </div>
   );
 };

@@ -9,6 +9,7 @@ class FamilyChatMessage extends Model
 {
     protected $fillable = [
         'user_id',
+        'client_message_id',
         'text',
         'photo_path',
         'photo_name',
