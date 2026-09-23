@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
+
 import api from '../../services/api';
 import BasePopup from '../BasePopoup';
 import CreateSpecialDay from './CreateSpecialDay';
+import { useQuery } from '@tanstack/react-query';
 
 const MONTH_NAMES = [
   'janvāris',
@@ -114,9 +116,32 @@ function uniqueLabels(items, labelGetter) {
 }
 
 function Calendar() {
-  const [nameDaysData, setNameDaysData] = useState({});
-  const [surnameDaysData, setSurnameDaysData] = useState({});
-  const [specialDays, setSpecialDays] = useState([]);
+
+  const { data: nameDaysData = [] } = useQuery({
+    queryKey: ["namedays"],
+    queryFn: async () => {
+      const response = await api.get("/api/namedays");
+      return response.data;
+    },
+  })
+
+  const { data: surnameDaysData = [] } = useQuery({
+    queryKey: ["surnamedays"],
+    queryFn: async () => {
+      const response = await api.get("/api/surname")
+      return response.data
+    },
+  })
+
+  const { data: specialDays = []} = useQuery({
+    queryKey: ["special-days"],
+  })
+
+  console.log(nameDaysData);
+
+  // const [nameDaysData, setNameDaysData] = usetate({});
+  // const [surnameDaysData, setSurnameDaysData] = useState({});
+  // const [specialDays, setSpecialDays] = useState([]);
   const [birthdayUsers, setBirthdayUsers] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);

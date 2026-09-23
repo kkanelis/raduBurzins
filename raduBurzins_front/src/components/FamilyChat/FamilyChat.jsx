@@ -16,6 +16,7 @@ const formatTime = (dateString) =>
 function FamilyChat() {
   const { user } = useAuth();
   const fileInputRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [selectedPhotoName, setSelectedPhotoName] = useState("");
@@ -53,6 +54,11 @@ function FamilyChat() {
       console.error("error:", error);
     }
   };
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (container) container.scrollTop = container.scrollHeight;
+  }, [messages]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -159,11 +165,11 @@ function FamilyChat() {
   }, [user]);
 
   return (
-    <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden bg-[#f7f3ef]">
+    <div className="relative h-[calc(100vh-5rem)] min-h-0 overflow-hidden bg-[#f7f3ef]">
       <div className="pointer-events-none absolute inset-0 hero-grid opacity-40" />
 
-      <div className="section-shell relative py-8 sm:py-12">
-          <section className="flex min-h-[680px] flex-col overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 shadow-soft backdrop-blur">
+        <div className="section-shell relative h-full min-h-0 py-4 sm:py-6">
+          <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 shadow-soft backdrop-blur">
             <div className="border-b border-[#eee5dc] bg-gradient-to-r from-[#382d5b] to-[#58467e] px-5 py-6 text-white sm:px-8">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -183,7 +189,7 @@ function FamilyChat() {
               </div>
             </div>
 
-            <div className="flex-1 space-y-4 overflow-y-auto bg-[#fcfaf8] px-4 py-6 sm:px-8">
+            <div ref={messagesContainerRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-[#fcfaf8] px-4 py-6 sm:px-8">
               {messages.length > 0 ? (
                 messages.map((message) => {
                   const mine = String(message.fromUserId) === String(user?.id);

@@ -1,37 +1,34 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useCommonData } from "./hooks/useCommonData";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import NavBar from "./components/NavBar/NavBar";
-// import UserSidebar from "./components/UserSidebar/UserSidebar";
-import Welcome from "./info/Welcome/Welcome";
+import Welcome from "./components/Info/Welcome/Welcome";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Footer from "./components/Footer/Footer";
 import "./index.css";
 
-const Info = lazy(() => import("./info/InfoPage/InfoPage"));
-const RegWelcome = lazy(() => import("./info/RegWelcome/RegWelcome"));
+const Info = lazy(() => import("./components/Info/InfoPage/InfoPage"));
+const RegWelcome = lazy(() => import("./components/Info/RegWelcome/RegWelcome"));
 const FamilyChat = lazy(() => import("./components/FamilyChat/FamilyChat"));
 const Calendar = lazy(() => import("./components/Calendar/Calendar"));
-const Terms = lazy(() => import("./info/Terms/Terms"));
+const Terms = lazy(() => import("./components/Info/Terms/Terms"));
 const Profile = lazy(() => import("./components/auth/Profile"));
 const ChristmasLottery = lazy(() => import("./components/Christmas/ChristmasLottery"));
-const MyEvents = lazy(() => import("./info/RegWelcome/MyEvents"));
+const MyEvents = lazy(() => import("./components/Info/RegWelcome/MyEvents"));
 const Albums = lazy(() => import("./components/Albums/Albums"));
 
 const AppContent = () => {
   const { user } = useAuth();
 
+  const commonData = useCommonData(Boolean(user));
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-warm-beige via-off-white to-[var(--bg-2)] flex flex-col">
       {user && <NavBar />}
       <div className={user ? "flex flex-1" : "flex-1"}>
-        {/* {user && (
-          <div className="hidden lg:block">
-            <UserSidebar />
-          </div>
-        )} */}
         <main className={`flex-1 w-full ${user ? "lg:ml-72" : ""}`}>
           <Suspense
             fallback={
