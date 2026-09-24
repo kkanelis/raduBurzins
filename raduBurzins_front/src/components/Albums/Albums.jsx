@@ -957,10 +957,6 @@ function Albums() {
                 <span className="text-sm font-semibold text-dark-purple">Emoji</span>
                 <input name="emoji" value={formData.emoji} onChange={handleChange} className="input-field" />
               </label>
-              <label className="grid gap-2 items-start">
-                <span className="text-sm font-semibold text-dark-purple">Publisks albums</span>
-                <input type="checkbox" name="is_public" checked={formData.is_public} onChange={handleChange} className="h-5 w-5" />
-              </label>
             </div>
 
             <label className="grid gap-2">
@@ -968,39 +964,56 @@ function Albums() {
               <textarea name="description" value={formData.description} onChange={handleChange} className="text-area-field" />
             </label>
 
-            <div className="rounded-2xl border border-white/80 bg-white/75 p-4">
-              <div className="mb-3">
-                <h4 className="text-sm font-bold text-dark-purple">Koplietot ar konkrētiem cilvēkiem</h4>
-              </div>
-              {users.length > 0 ? (
-                <div className="grid max-h-64 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                  {users.map((user) => {
-                    const checked = formData.shared_with_user_ids.includes(user.id);
-                    return (
-                      <button
-                        key={user.id}
-                        type="button"
-                        onClick={() => toggleSharedUser(user.id)}
-                        className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left transition ${
-                          checked ? "border-medium-purple bg-medium-purple/10" : "border-white/80 bg-white hover:bg-gray-50"
-                        }`}
-                      >
-                        <div>
-                          <div className="text-sm font-semibold text-dark-purple">
-                            {user.first_name} {user.last_name}
-                          </div>
-                          <div className="text-xs text-muted">{user.is_admin ? "Administrators" : "Lietotājs"}</div>
-                        </div>
-                        <span className={`rounded-full px-2 py-1 text-xs font-bold ${checked ? "bg-medium-purple text-white" : "bg-gray-100 text-gray-600"}`}>
-                          {checked ? "Pievienots" : "Pievienot"}
-                        </span>
-                      </button>
-                    );
-                  })}
+            
+            <div className="rounded-2xl border border-dashed border-medium-purple/25 bg-white/70 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-dark-purple">Privātums</h3>
+                  <p className="mt-1 text-xs text-muted">{sharedUsersLabel}</p>
                 </div>
-              ) : (
-                <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
-              )}
+                <button type="button" onClick={() => setFormData((prev) => ({ ...prev, is_public: !prev.is_public }))} className="btn-ghost px-4 py-2 text-sm">
+                  {formData.is_public ? "Padarīt privātu" : "Padarīt publisku"}
+                </button>
+              </div>
+
+              {!formData.is_public ? (
+                <div className="mt-4 rounded-[1.5rem] border border-white/80 bg-white p-4">
+                  <div className="mb-3">
+                    <h4 className="text-sm font-bold text-dark-purple">Kas var redzēt albumu?</h4>
+                    <p className="mt-1 text-xs text-muted">Atzīmē konkrētus cilvēkus, ja albums nav publisks.</p>
+                  </div>
+
+                  {users.length > 0 ? (
+                    <div className="grid max-h-64 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                      {users.map((user) => {
+                        const checked = formData.shared_with_user_ids.includes(user.id);
+                        return (
+                          <button
+                            key={user.id}
+                            type="button"
+                            onClick={() => toggleSharedUser(user.id)}
+                            className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left transition ${
+                              checked ? "border-medium-purple bg-medium-purple/10" : "border-white/80 bg-white hover:bg-gray-50"
+                            }`}
+                          >
+                            <div>
+                              <div className="text-sm font-semibold text-dark-purple">
+                                {user.first_name} {user.last_name}
+                              </div>
+                              <div className="text-xs text-muted">{user.is_admin ? "Administrators" : "Lietotājs"}</div>
+                            </div>
+                            <span className={`rounded-full px-2 py-1 text-xs font-bold ${checked ? "bg-medium-purple text-white" : "bg-gray-100 text-gray-600"}`}>
+                              {checked ? "Pievienots" : "Pievienot"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
+                  )}
+                </div>
+              ) : null}
             </div>
 
             <div className="flex flex-wrap justify-end gap-3">

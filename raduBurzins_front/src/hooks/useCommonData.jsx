@@ -20,12 +20,17 @@ export function useCommonData(enable = true) {
                 enabled: enable,
             },
             {
+                queryKey: ["namedays"],
+                queryFn: getData("/api/namedays"),
+                enabled: enable,
+            },
+            {
                 queryKey: ["surnames"],
                 queryFn: getData("/api/surnames"),
                 enabled: enable,
             },
             {
-                queryKey: ["specialDays"],
+                queryKey: ["special-days"],
                 queryFn: getData("/api/special-days"),
                 enabled: enable,
             },
@@ -33,7 +38,7 @@ export function useCommonData(enable = true) {
     });
 
     return {
-        profile: results[0].data,
+        profile: results[0]?.data ?? null,
         users: results[1]?.data ?? null,
         namedays: results[2]?.data ?? null,
         surnames: results[3]?.data ?? null,

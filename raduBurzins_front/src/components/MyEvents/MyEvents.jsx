@@ -439,32 +439,6 @@ function MyEvents() {
             </div>
             }
 
-            <div className="space-y-3 rounded-2xl border border-white/80 bg-white/75 p-4">
-              <div className="eyebrow">🖼️ Attēls</div>
-              {selectedEvent.image_url && !removeImage && (
-                <div className="overflow-hidden rounded-2xl border border-white/80 bg-white">
-                  <img src={selectedEvent.image_url} alt={selectedEvent.title} className="h-48 w-full object-cover" />
-                </div>
-              )}
-              <div className="flex flex-wrap items-center gap-3">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                  className="block w-full text-sm"
-                />
-                {selectedEvent.image_url && (
-                  <button
-                    type="button"
-                    onClick={() => setRemoveImage((prev) => !prev)}
-                    className="btn-ghost px-4 py-2 text-sm"
-                  >
-                    {removeImage ? 'Atcelt dzēšanu' : 'Noņemt attēlu'}
-                  </button>
-                )}
-              </div>
-            </div>
-
             {error && (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}

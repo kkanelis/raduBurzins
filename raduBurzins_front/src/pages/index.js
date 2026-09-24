@@ -4,7 +4,7 @@ export { default as RegWelcome } from "../components/Info/RegWelcome/RegWelcome"
 export { default as FamilyChat } from "../components/FamilyChat/FamilyChat";
 export { default as Terms } from "../components/Info/Terms/Terms";
 export { default as Albums } from "../components/Albums/Albums";
-export { default as MyEvents } from "../components/Info/RegWelcome/MyEvents";
+export { default as MyEvents } from "../components/MyEvents/MyEvents";
 export { default as Calendar } from "../components/Calendar/Calendar";
 export { default as Profile } from "../components/auth/Profile";
 export { default as ChristmasLottery } from "../components/Christmas/ChristmasLottery";

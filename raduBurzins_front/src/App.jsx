@@ -17,7 +17,7 @@ const Calendar = lazy(() => import("./components/Calendar/Calendar"));
 const Terms = lazy(() => import("./components/Info/Terms/Terms"));
 const Profile = lazy(() => import("./components/auth/Profile"));
 const ChristmasLottery = lazy(() => import("./components/Christmas/ChristmasLottery"));
-const MyEvents = lazy(() => import("./components/Info/RegWelcome/MyEvents"));
+const MyEvents = lazy(() => import("./components/MyEvents/MyEvents"));
 const Albums = lazy(() => import("./components/Albums/Albums"));
 
 const AppContent = () => {

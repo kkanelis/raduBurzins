@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import api from '../../services/api';
 import BasePopup from '../BasePopoup';
 import CreateSpecialDay from './CreateSpecialDay';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const MONTH_NAMES = [
   'janvāris',
@@ -98,15 +98,6 @@ function resolveItems(dataMap, date) {
   return dataMap[fullKey] || dataMap[monthDayKey] || [];
 }
 
-function formatBirthdayDate(dateValue) {
-  const date = new Date(dateValue);
-  return date.toLocaleDateString('lv-LV', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
 function uniqueById(items) {
   return Array.from(new Map(items.map((item) => [item.id, item])).values());
 }
@@ -116,75 +107,68 @@ function uniqueLabels(items, labelGetter) {
 }
 
 function Calendar() {
+  const queryClient = useQueryClient();
 
-  const { data: nameDaysData = [] } = useQuery({
+  const { data: nameDaysResponse = [], isLoading: namedaysLoading, isError: namedaysError } = useQuery({
     queryKey: ["namedays"],
     queryFn: async () => {
       const response = await api.get("/api/namedays");
+      return response.data || [];
+    },
+  });
+
+  const { data: surnameDaysResponse = [], isLoading: surnamesLoading, isError: surnamesError } = useQuery({
+    queryKey: ["surnames"],
+    queryFn: async () => {
+      const response = await api.get("/api/surnames");
+      return response.data || [];
+    },
+  });
+
+  const nameDaysData = useMemo(
+    () => Array.isArray(nameDaysResponse)
+      ? normalizeItems(nameDaysResponse, 'names')
+      : nameDaysResponse,
+    [nameDaysResponse],
+  );
+
+  const surnameDaysData = useMemo(
+    () => Array.isArray(surnameDaysResponse)
+      ? normalizeItems(surnameDaysResponse, 'surnames')
+      : surnameDaysResponse,
+    [surnameDaysResponse],
+  );
+
+  const { data: specialDays = [], isLoading: specialDaysLoading, isError: specialDaysError } = useQuery({
+    queryKey: ["special-days"],
+    queryFn: async () => {
+      const response = await api.get("/api/special-days");
+      return Array.isArray(response.data) ? response.data : [];
+    },
+  });
+
+  const { data: usersStatus, isLoading: usersLoading, isError: usersError } = useQuery({
+    queryKey: ["users-status"],
+    queryFn: async () => {
+      const response = await api.get("/api/users/status");
       return response.data;
     },
-  })
+  });
 
-  const { data: surnameDaysData = [] } = useQuery({
-    queryKey: ["surnamedays"],
-    queryFn: async () => {
-      const response = await api.get("/api/surname")
-      return response.data
-    },
-  })
+  const birthdayUsers = useMemo(() => {
+    const combinedUsers = [
+      ...(usersStatus?.online || []),
+      ...(usersStatus?.offline || []),
+    ];
 
-  const { data: specialDays = []} = useQuery({
-    queryKey: ["special-days"],
-  })
+    return uniqueById(combinedUsers).filter((user) => user.date_of_birth);
+  }, [usersStatus]);
 
-  console.log(nameDaysData);
-
-  // const [nameDaysData, setNameDaysData] = usetate({});
-  // const [surnameDaysData, setSurnameDaysData] = useState({});
-  // const [specialDays, setSpecialDays] = useState([]);
-  const [birthdayUsers, setBirthdayUsers] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  // Kalendāra datu funkcijas
-
-  useEffect(() => {
-    const loadCalendarData = async () => {
-      setLoading(true);
-      setError('');
-
-      try {
-        const [namedaysResponse, surnamesResponse, specialDaysResponse, usersResponse] = await Promise.all([
-          api.get('/api/namedays'),
-          api.get('/api/surnames'),
-          api.get('/api/special-days'),
-          api.get('/api/users/status'),
-        ]);
-
-        setNameDaysData(normalizeItems(namedaysResponse.data || [], 'names'));
-        setSurnameDaysData(normalizeItems(surnamesResponse.data || [], 'surnames'));
-        setSpecialDays(Array.isArray(specialDaysResponse.data) ? specialDaysResponse.data : []);
-
-        const combinedUsers = [
-          ...(usersResponse.data?.online || []),
-          ...(usersResponse.data?.offline || []),
-        ];
-
-        const uniqueUsers = uniqueById(combinedUsers);
-        setBirthdayUsers(uniqueUsers.filter((user) => user.date_of_birth));
-      } catch (loadError) {
-        setError('Neizdevās ielādēt kalendāra datus.');
-        console.error('Error loading calendar data:', loadError);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCalendarData();
-  }, []);
+  const loading = namedaysLoading || surnamesLoading || specialDaysLoading || usersLoading;
+  const error = namedaysError || surnamesError || specialDaysError || usersError;
 
   const currentYear = selectedDate.getFullYear();
   const currentMonth = selectedDate.getMonth();
@@ -354,8 +338,6 @@ function Calendar() {
                   const isToday = formatDateKey(new Date()) === fullKey;
                   const hasBirthday = birthdays.length > 0;
                   const hasEvent = specials.length > 0;
-                  const specialTitle = specials[0]?.title;
-                  const birthdayNames = birthdays.map((user) => `${user.first_name} ${user.last_name}`);
                   const primaryItems = names;
 
                   const cellClasses = [
@@ -439,7 +421,7 @@ function Calendar() {
         <CreateSpecialDay
           onClose={() => setShowCreateModal(false)}
           onSuccess={(created) => {
-            setSpecialDays((prev) => [created, ...prev]);
+            queryClient.setQueryData(["special-days"], (current = []) => [created, ...current]);
             setShowCreateModal(false);
           }}
         />
