@@ -29,7 +29,7 @@ class ChristmasLotteryController extends Controller
         return response()->json([
             'status' => 'success',
             'year' => $year,
-            'assignments' => $lotteryAssignments
+            'assignments' => $lotteryAssignments,
         ]);
     }
 }

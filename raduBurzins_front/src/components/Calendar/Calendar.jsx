@@ -147,7 +147,7 @@ function Calendar() {
     },
   });
 
-  const { data: usersStatus, isLoading: usersLoading, isError: usersError } = useQuery({
+  const { data: usersStatus = [], isLoading: usersLoading, isError: usersError } = useQuery({
     queryKey: ["users-status"],
     queryFn: async () => {
       const response = await api.get("/api/users/status");
@@ -155,14 +155,10 @@ function Calendar() {
     },
   });
 
-  const birthdayUsers = useMemo(() => {
-    const combinedUsers = [
-      ...(usersStatus?.online || []),
-      ...(usersStatus?.offline || []),
-    ];
-
-    return uniqueById(combinedUsers).filter((user) => user.date_of_birth);
-  }, [usersStatus]);
+  const birthdayUsers = useMemo(
+    () => uniqueById(usersStatus.users || []).filter((user) => user.date_of_birth),
+    [usersStatus],
+  );
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);
@@ -181,7 +177,7 @@ function Calendar() {
       const rawDate = String(day.date || '');
       const fullKey = rawDate.slice(0, 10);
       const monthDayKey = extractMonthDayKey(rawDate);
-      const keys = day.repeats ? [monthDayKey] : [fullKey, monthDayKey];
+      const keys = day.repeats ? [monthDayKey] : [fullKey];
 
       keys.forEach((key) => {
         if (!key) return;
@@ -422,6 +418,7 @@ function Calendar() {
           onClose={() => setShowCreateModal(false)}
           onSuccess={(created) => {
             queryClient.setQueryData(["special-days"], (current = []) => [created, ...current]);
+            queryClient.invalidateQueries({ queryKey: ["user-special-days"] });
             setShowCreateModal(false);
           }}
         />

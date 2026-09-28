@@ -12,7 +12,7 @@ class ChristmasLottery extends Model
     protected $fillable = [
         'user_id',
         'giving_to_user_id',
-        'year'
+        'year',
     ];
 
     public function user(): BelongsTo

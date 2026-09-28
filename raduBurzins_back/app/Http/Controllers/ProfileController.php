@@ -4,28 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\User;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
-    public function edit(Request $request): Response
-    {
-        return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => session('status'),
-        ]);
-    }
-
     public function show(Request $request): JsonResponse
     {
         return response()->json([
@@ -36,34 +20,26 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): JsonResponse|RedirectResponse
+    public function update(ProfileUpdateRequest $request): JsonResponse
     {
         $user = $request->user();
-        $validated = $request->validated([
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
-            'nickname' => 'nullable|string|max:100',
-            'phone' => 'nullable|integer|max:8',
-            'date_of_birth' => 'nullable|date',
-        ]);
+        $validated = $request->validated();
 
         $user->fill($validated);
 
         if ($request->hasFile('avatar')) {
             $this->replaceAvatar($user, $request);
         }
-        
+
         $user->save();
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Profils saglabāts.',
-                'user' => $user->fresh(),
-            ]);
-        }
-
-        return redirect()->route('profile.edit');
+        return response()->json([
+            'message' => 'Profils saglabāts.',
+            'user' => $user->fresh(),
+        ]);
     }
+
+    // Avatar funkcijas
 
     public function avatar(Request $request): JsonResponse
     {
@@ -72,7 +48,9 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
-        $this->replaceAvatar($user, $request);
+        if ($request->hasFile('avatar')) {
+            $this->replaceAvatar($user, $request);
+        }
         $user->save();
 
         return response()->json([
@@ -83,10 +61,17 @@ class ProfileController extends Controller
 
     private function replaceAvatar(User $user, Request $request): void
     {
-        if ($user->avatar_path) {
-            Storage::disk('public')->delete($user->avatar_path);
+        $previousPath = $user->avatar_path;
+        $newPath = $request->file('avatar')->store('avatars', 'public');
+
+        if (! $newPath) {
+            return;
         }
 
-        $user->avatar_path = $request->file('avatar')->store('avatars', 'public');
+        $user->avatar_path = $newPath;
+
+        if ($previousPath) {
+            Storage::disk('public')->delete($previousPath);
+        }
     }
 }

@@ -103,9 +103,9 @@ class ChatMessageController extends Controller
             'id' => $message->id,
             'clientMessageId' => $message->client_message_id,
             'fromUserId' => $message->user_id,
-            'fromName' => trim(($message->user?->first_name ?? '') . ' ' . ($message->user?->last_name ?? '')) ?: 'Lietotājs',
+            'fromName' => trim(($message->user?->first_name ?? '').' '.($message->user?->last_name ?? '')) ?: 'Lietotājs',
             'text' => $message->text,
-            'photo' => $message->photo_path ? asset('storage/' . $message->photo_path) : null,
+            'photo' => $message->photo_path ? asset('storage/'.$message->photo_path) : null,
             'photoName' => $message->photo_name,
             'createdAt' => $message->created_at?->toISOString(),
         ];

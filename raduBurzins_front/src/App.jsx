@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useCommonData } from "./hooks/useCommonData";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./context/useAuth";
 import NavBar from "./components/NavBar/NavBar";
 import Welcome from "./components/Info/Welcome/Welcome";
 import Login from "./components/auth/Login";
@@ -20,10 +20,9 @@ const ChristmasLottery = lazy(() => import("./components/Christmas/ChristmasLott
 const MyEvents = lazy(() => import("./components/MyEvents/MyEvents"));
 const Albums = lazy(() => import("./components/Albums/Albums"));
 
+// App root and routing
 const AppContent = () => {
   const { user } = useAuth();
-
-  const commonData = useCommonData(Boolean(user));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-warm-beige via-off-white to-[var(--bg-2)] flex flex-col">

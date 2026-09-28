@@ -1,17 +1,17 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\AlbumController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\SpecialDayController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\ChristmasLotteryController;
-use App\Http\Controllers\UserStatusController;
 use App\Http\Controllers\NamedaysController;
-use App\Http\Controllers\SurnamedaysController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AlbumController;
+use App\Http\Controllers\SpecialDayController;
+use App\Http\Controllers\SurnamedaysController;
+use App\Http\Controllers\UserStatusController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisteredUserController::class, 'store']);
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
@@ -42,7 +42,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // User routes
     Route::get('/users', [UserStatusController::class, 'getUsers']);
     Route::get('/users/status', [UserStatusController::class, 'index']);
-    Route::post('/users/status', [UserStatusController::class, 'updateStatus']);
 
     // Family chat routes
     Route::get('/chat-messages', [ChatMessageController::class, 'index']);

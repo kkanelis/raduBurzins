@@ -1,11 +1,8 @@
-<?php 
+<?php
 
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Carbon\Carbon;
 
 class UserStatusController extends Controller
 {
@@ -16,17 +13,11 @@ class UserStatusController extends Controller
             ->get();
 
         return response()->json([
-            'online' => [],
-            'offline' => $users,
+            'users' => $users,
         ]);
     }
 
-    public function updateStatus(Request $request)
-    {
-        $userId = $request->user()->id;
-    }
-
-    public function getUsers() 
+    public function getUsers()
     {
         $users = User::All();
 

@@ -10,9 +10,8 @@ use Illuminate\Support\Facades\Storage;
 
 class AlbumController extends Controller
 {
-
-    // Albuma pamata kodi
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
         $userId = $request->user()->getKey();
 
         $albums = Album::query()
@@ -29,15 +28,17 @@ class AlbumController extends Controller
         return response()->json($albums);
     }
 
-    public function show(Request $request, Album $album) : JsonResponse {
+    public function show(Request $request, Album $album): JsonResponse
+    {
         $this->authorizeAlbum($request, $album);
 
         return response()->json($this->normalizeAlbum($album->load(['photos' => fn ($query) => $query->latest()])));
     }
 
-    public function store(Request $request): JsonResponse {
+    public function store(Request $request): JsonResponse
+    {
         $validated = $request->validate([
-            "title" => 'required|string|max:100',
+            'title' => 'required|string|max:100',
             'description' => 'nullable|string|max:255',
             'category' => 'nullable|string|max:100',
             'emoji' => 'nullable|string|max:10',
@@ -62,8 +63,8 @@ class AlbumController extends Controller
         $photos = $request->file('photos', []);
 
         foreach ($photos as $photo => $photoData) {
-            $imagePath = $photoData['image']->store('albums/' . $album->id, 'public');
-            $photo = AlbumPhoto::create([
+            $imagePath = $photoData['image']->store('albums/'.$album->id, 'public');
+            AlbumPhoto::create([
                 'album_id' => $album->id,
                 'title' => $request->input("photos.$photo.title"),
                 'note' => $request->input("photos.$photo.note"),
@@ -75,11 +76,12 @@ class AlbumController extends Controller
 
         return response()->json([
             'message' => 'Albums izveidots!',
-            'album' => $this->normalizeAlbum($album->fresh(['photos' => fn($query) => $query->latest()]))
+            'album' => $this->normalizeAlbum($album->fresh(['photos' => fn ($query) => $query->latest()])),
         ]);
     }
 
-    public function update(Request $request, Album $album): JsonResponse {
+    public function update(Request $request, Album $album): JsonResponse
+    {
         $this->authorizeAlbum($request, $album, true);
 
         $validated = $request->validate([
@@ -107,7 +109,8 @@ class AlbumController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, Album $album): JsonResponse {
+    public function destroy(Request $request, Album $album): JsonResponse
+    {
         $this->authorizeAlbum($request, $album, true);
 
         foreach ($album->photos as $photo) {
@@ -123,9 +126,9 @@ class AlbumController extends Controller
         ]);
     }
 
-    // Priekš albuma fotografiju kodi
+    // Photo management
 
-        public function addPhoto(Request $request, Album $album): JsonResponse
+    public function addPhoto(Request $request, Album $album): JsonResponse
     {
         $this->authorizeAlbum($request, $album, true);
 
@@ -135,7 +138,7 @@ class AlbumController extends Controller
             'image' => 'required|image|max:8192',
         ]);
 
-        $imagePath = $request->file('image')->store('albums/' . $album->id, 'public');
+        $imagePath = $request->file('image')->store('albums/'.$album->id, 'public');
 
         $photo = AlbumPhoto::create([
             'album_id' => $album->id,
@@ -153,7 +156,8 @@ class AlbumController extends Controller
         ], 201);
     }
 
-    public function updatePhoto(Request $request, Album $album, AlbumPhoto $photo): JsonResponse {
+    public function updatePhoto(Request $request, Album $album, AlbumPhoto $photo): JsonResponse
+    {
         $this->authorizeAlbum($request, $album, true);
         $this->authorizePhotoBelongsToAlbum($photo, $album);
 
@@ -168,7 +172,7 @@ class AlbumController extends Controller
                 Storage::disk('public')->delete($photo->image_path);
             }
 
-            $photo->image_path = $request->file('image')->store('albums/' . $album->id, 'public');
+            $photo->image_path = $request->file('image')->store('albums/'.$album->id, 'public');
         }
 
         $photo->fill([
@@ -199,7 +203,8 @@ class AlbumController extends Controller
         ];
     }
 
-    public function destroyPhoto(Request $request, Album $album, AlbumPhoto $photo): JsonResponse {
+    public function destroyPhoto(Request $request, Album $album, AlbumPhoto $photo): JsonResponse
+    {
         $this->authorizeAlbum($request, $album, true);
         $this->authorizePhotoBelongsToAlbum($photo, $album);
 
@@ -214,10 +219,10 @@ class AlbumController extends Controller
         ]);
     }
 
+    // Photo reactions
 
-    // Reactions
-
-    public function reactToPhoto(Request $request, Album $album, AlbumPhoto $photo): JsonResponse {
+    public function reactToPhoto(Request $request, Album $album, AlbumPhoto $photo): JsonResponse
+    {
         $this->authorizeAlbum($request, $album);
         $this->authorizePhotoBelongsToAlbum($photo, $album);
 
@@ -239,7 +244,8 @@ class AlbumController extends Controller
         ]);
     }
 
-    public function removeReaction(Request $request, Album $album, AlbumPhoto $photo): JsonResponse {
+    public function removeReaction(Request $request, Album $album, AlbumPhoto $photo): JsonResponse
+    {
         $this->authorizeAlbum($request, $album);
         $this->authorizePhotoBelongsToAlbum($photo, $album);
 
@@ -257,12 +263,11 @@ class AlbumController extends Controller
             'photo' => $this->normalizePhoto($photo->fresh()),
         ]);
     }
-    
-    
 
-    // Tālākās nepieciešamās kodi
+    // Citas nepieciešamās funkcijas
 
-    private function authorizeAlbum(Request $request, Album $album, bool $ownerOnly = false): void {
+    private function authorizeAlbum(Request $request, Album $album, bool $ownerOnly = false): void
+    {
         $currentUserId = $request->user()?->getKey();
 
         if ($ownerOnly && (int) $album->user_id !== (int) $currentUserId) {
@@ -274,17 +279,20 @@ class AlbumController extends Controller
         }
     }
 
-    private function authorizePhotoBelongsToAlbum(AlbumPhoto $photo, Album $album): void {
+    private function authorizePhotoBelongsToAlbum(AlbumPhoto $photo, Album $album): void
+    {
         if ((int) $photo->album_id !== (int) $album->id) {
             abort(404);
         }
     }
 
-    private function sharedUserIds(Album $album): array {
+    private function sharedUserIds(Album $album): array
+    {
         $value = $album->shared_with_user_ids ?? [];
 
         if (is_string($value)) {
             $decoded = json_decode($value, true);
+
             return is_array($decoded) ? array_values(array_map('intval', $decoded)) : [];
         }
 
@@ -317,7 +325,7 @@ class AlbumController extends Controller
 
     public function normalizeAlbumPhoto(AlbumPhoto $photo): array
     {
-        $imageUrl = $photo->image_path ? asset('storage/' . $photo->image_path) : null;
+        $imageUrl = $photo->image_path ? asset('storage/'.$photo->image_path) : null;
 
         return [
             'id' => $photo->id,

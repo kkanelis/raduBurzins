@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 const ChristmasLottery = () => {
     const { user } = useAuth();
@@ -65,6 +65,12 @@ const ChristmasLottery = () => {
                         🎄 Ziemassvētki {currentYear} 🎄
                     </h1>
                 </div>
+
+                {error && (
+                    <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {error}
+                    </div>
+                )}
 
                 <div className="card backdrop-blur-sm border border-medium-purple/30 shadow-2xl">
                     {currentUserData ? (

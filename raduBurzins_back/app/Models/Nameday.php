@@ -10,10 +10,10 @@ class Nameday extends Model
 
     protected $fillable = [
         'date',
-        'names'
+        'names',
     ];
 
     protected $casts = [
-        'names' => 'array'
+        'names' => 'array',
     ];
 }

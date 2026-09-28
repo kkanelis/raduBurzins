@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import BasePopup from "../../components/BasePopoup";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import api from "../../services/api";
-
-const emojiOptions = ["❤️", "😍", "🔥", "👏", "😂", "🎉", "😮", "👍"];
 
 const emptyForm = {
   title: "",

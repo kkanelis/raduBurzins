@@ -30,13 +30,6 @@ const actions = [
     to: '/profile',
     color: 'from-[#f28e6b] to-[#ffb37a]',
   },
-  // {
-  //   title: 'Svētku režīms',
-  //   text: 'Ieej ziemas sadaļā un pieslēdz svētku sajūtu.',
-  //   icon: '🎄',
-  //   to: '/christmas',
-  //   color: 'from-[#7c5cff] to-[#4f8cff]',
-  // },
   {
     title: 'Tavi notikumi',
     text: 'Skaties, labo un organizē visu vienuviet.',
@@ -44,13 +37,6 @@ const actions = [
     to: '/my-events',
     color: 'from-[#ff9f68] to-[#ffcf6b]',
   },
-];
-
-const spotlightItems = [
-  'Šodienas kopsavilkums',
-  'Nākamie svarīgie datumi',
-  'Ātrās darbības',
-  'Svarīgās saites',
 ];
 
 function RegWelcome() {

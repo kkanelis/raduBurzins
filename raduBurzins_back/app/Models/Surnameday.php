@@ -10,10 +10,10 @@ class Surnameday extends Model
 
     protected $fillable = [
         'date',
-        'surnames'
+        'surnames',
     ];
 
     protected $casts = [
-        'surnames' => 'array'
+        'surnames' => 'array',
     ];
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, NavLink } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
+import api from '../../services/api';
 
 function NavBar() {
   const { user, logout } = useAuth();
@@ -69,7 +70,15 @@ function NavBar() {
                 <>
                   <Link to="/profile" className="hidden items-center gap-3 rounded-2xl bg-[#f4eee9] px-3 py-3 text-left no-underline transition hover:bg-[#eee7f5] lg:flex">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-dark-purple to-medium-purple text-sm font-black text-white shadow-sm">
-                      {userInitials}
+                      {user.avatar_path ? (
+                        <img
+                          src={`${api.defaults.baseURL}/storage/${user.avatar_path}`}
+                          alt={`${user.first_name} ${user.last_name}`}
+                          className="h-full w-full rounded-xl object-cover"
+                        />
+                      ) : (
+                        userInitials
+                      )}
                     </div>
                     <div className="min-w-0">
                       <div className="truncate text-xs font-bold text-[#382d5b]">{user.first_name} {user.last_name}</div>

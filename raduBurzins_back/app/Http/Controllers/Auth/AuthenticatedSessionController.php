@@ -15,28 +15,15 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request)
     {
-        $validated = $request->validate([
-            "email" => ['required'],
-            "password" => ["required"]
-        ]);
-
-
-        if (!Auth::attempt($validated)) {
-            throw ValidationException::withMessages([
-                "email" => "Parole vai epasts nav pareizs",
-                "password" => "Parole vai epasts nav pareizs",
-              ]);
-        }
-    
+        $request->authenticate();
         $user = Auth::user();
-    
-        if (!$user->is_approved) {
+
+        if (! $user->is_approved) {
             Auth::logout();
             throw ValidationException::withMessages([
                 'email' => ['Tavs lietotāja konts vēl nav apstiprināts.'],
             ]);
         }
-
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -44,7 +31,7 @@ class AuthenticatedSessionController extends Controller
             'status' => 'success',
             'message' => 'Esi piereģistrējies veiksmīgi',
             'user' => $user,
-            'token' => $token
+            'token' => $token,
         ]);
     }
 
@@ -59,7 +46,7 @@ class AuthenticatedSessionController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Esi izreģistrējies veiksmīgi'
+            'message' => 'Esi atvienojies no konta veiksmīgi',
         ]);
     }
 }

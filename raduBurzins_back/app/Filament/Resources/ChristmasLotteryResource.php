@@ -10,7 +10,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Collection;
 
 class ChristmasLotteryResource extends Resource
 {
@@ -51,9 +50,6 @@ class ChristmasLotteryResource extends Resource
                 Tables\Columns\TextColumn::make('year')
                     ->label('Gads')
                     ->sortable(),
-            ])
-            ->filters([
-                //
             ]);
     }
 

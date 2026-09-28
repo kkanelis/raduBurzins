@@ -1,12 +1,13 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import AuthContext from './AuthContextValue';
 
-const AuthContext = createContext({});
-
+// Authentication context shared across the frontend
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Restore stored session and verify auth state on app load
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser && storedUser !== 'undefined') {
@@ -31,7 +32,7 @@ export const AuthProvider = ({ children }) => {
             const response = await api.get('/api/user');
             setUser(response.data);
             localStorage.setItem('user', JSON.stringify(response.data));
-        } catch (error) {
+        } catch {
             setUser(null);
             localStorage.removeItem('user');
             localStorage.removeItem('token');
@@ -46,30 +47,22 @@ export const AuthProvider = ({ children }) => {
     };
 
     const login = async (email, password) => {
-        try {
-            const response = await api.post('/api/login', {
-                email,
-                password
-            });
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            setUser(response.data.user);
-            return response;
-        } catch (error) {
-            throw error;
-        }
+        const response = await api.post('/api/login', {
+            email,
+            password
+        });
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        setUser(response.data.user);
+        return response;
     };
 
     const register = async (userData) => {
-        try {
-            const response = await api.post('/api/register', userData);
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            setUser(response.data.user);
-            return response;
-        } catch (error) {
-            throw error;
-        }
+        const response = await api.post('/api/register', userData);
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        setUser(response.data.user);
+        return response;
     };
 
     const logout = async () => {
@@ -98,5 +91,3 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
-
-export const useAuth = () => useContext(AuthContext);

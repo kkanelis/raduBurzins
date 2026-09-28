@@ -19,13 +19,6 @@ const highlights = [
   },
 ];
 
-const values = [
-  'Viss svarīgais vienuviet',
-  'Vienkārši lietojama struktūra',
-  'Pielāgota ģimenes vajadzībām',
-  'Pastāvīgi tiek papildināta',
-];
-
 function InfoPage() {
   return (
     <div className="relative overflow-hidden">

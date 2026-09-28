@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import api from '../../services/api';
 
 function Profile() {
@@ -26,22 +26,13 @@ function Profile() {
 
   const avatarPreview = useMemo(() => {
     if (avatarFile) return URL.createObjectURL(avatarFile);
-    if (user?.avatar_url) return `${user.avatar_url}?t=${user.updated_at || Date.now()}`;
+    if (user?.avatar_path) {
+      return `${api.defaults.baseURL}/storage/${user.avatar_path}?t=${user.updated_at || Date.now()}`;
+    }
     return '';
-  }, [avatarFile, user?.avatar_url, user?.updated_at]);
+  }, [avatarFile, user?.avatar_path, user?.updated_at]);
 
   if (!user) return <div className="py-8 text-center">Nav lietotāja datu.</div>;
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return dateString;
-    return date.toLocaleDateString('lv-LV', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;

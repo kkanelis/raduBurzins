@@ -15,7 +15,6 @@ class SpecialDay extends Model
         'repeats',
         'location',
         'event_time',
-        'image_path',
         'is_public',
         'shared_with_user_ids',
     ];
@@ -27,17 +26,8 @@ class SpecialDay extends Model
         'shared_with_user_ids' => 'array',
     ];
 
-    protected $appends = [
-        'image_url',
-    ];
-
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function getImageUrlAttribute(): ?string
-    {
-        return $this->image_path ? asset('storage/' . $this->image_path) : null;
     }
 }

@@ -1,17 +1,33 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import api from '../../services/api';
 import BasePopup from '../../components/BasePopoup';
 import CreateSpecialDay from '../../components/Calendar/CreateSpecialDay';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 function MyEvents() {
-  const [events, setEvents] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+
+  // Data loading
+  const { data: events = [], isLoading: eventsLoading, isError: eventsError } = useQuery({
+    queryKey: ["user-special-days"],
+    queryFn: async () => {
+      const response = await api.get("/api/user/special-days");
+      return response.data || [];
+    },
+  });
+
+  const { data: users, isLoading: usersLoading, isError: usersError } = useQuery({
+    queryKey: ["users-status"],
+    queryFn: async () => {
+      const response = await api.get("/api/users/status");
+      return response.data;
+    },
+  });
+
+  // Local UI state
+  const [localError, setLocalError] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [shareWithOthers, setShareWithOthers] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -26,47 +42,15 @@ function MyEvents() {
   const [removeImage, setRemoveImage] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const loadEvents = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await api.get('/api/user/special-days');
-      setEvents(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Neizdevās ielādēt notikumus.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const response = await api.get('/api/users');
-        const users = [...(response.data || [])];
-        setUsers(users);
-      } catch (err) {
-        setUsers([]);
-      } finally {
-        setLoadingUsers(false);
-      }
-    };
-
-    loadEvents();
-    loadUsers();
-  }, []);
+  const loading = eventsLoading || usersLoading;
+  const error = eventsError || usersError || localError;
 
   const sortedEvents = useMemo(
-    () =>
-      [...events].sort((a, b) => {
-        const aDate = new Date(a.date).getTime();
-        const bDate = new Date(b.date).getTime();
-        return aDate - bDate;
-      }),
-    [events]
+    () => [...events].sort((a, b) => new Date(a.date) - new Date(b.date)),
+    [events],
   );
 
+  // Event helpers
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('lv-LV', {
@@ -77,7 +61,6 @@ function MyEvents() {
   };
 
   const openEditor = (event) => {
-    const sharedUserIds = event.shared_with_user_ids;
     setSelectedEvent(event);
     setFormData({
       title: event.title || '',
@@ -87,10 +70,11 @@ function MyEvents() {
       location: event.location || '',
       event_time: event.event_time || '',
       is_public: Boolean(event.is_public),
-      shared_user_ids: event.shared_with_user_ids
+      shared_user_ids: Array.isArray(event.shared_with_user_ids) ? event.shared_with_user_ids : [],
     });
     setImageFile(null);
     setRemoveImage(false);
+    setLocalError('');
   };
 
   const toggleSharedUser = (userId) => {
@@ -109,14 +93,16 @@ function MyEvents() {
     setSelectedEvent(null);
     setImageFile(null);
     setRemoveImage(false);
+    setLocalError('');
   };
 
+  // Event CRUD actions
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!selectedEvent) return;
 
     setSaving(true);
-    setError('');
+    setLocalError('');
 
     try {
       const payload = new FormData();
@@ -138,10 +124,13 @@ function MyEvents() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      await loadEvents();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["user-special-days"] }),
+        queryClient.invalidateQueries({ queryKey: ["special-days"] }),
+      ]);
       closeEditor();
     } catch (err) {
-      setError(err.response?.data?.message || 'Neizdevās saglabāt notikumu.');
+      setLocalError(err.response?.data?.message || 'Neizdevās saglabāt notikumu.');
     } finally {
       setSaving(false);
     }
@@ -153,9 +142,13 @@ function MyEvents() {
 
     try {
       await api.delete(`/api/special-days/${eventId}`);
-      await loadEvents();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["user-special-days"] }),
+        queryClient.invalidateQueries({ queryKey: ["special-days"] }),
+      ]);
+      setLocalError('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Neizdevās dzēst notikumu.');
+      setLocalError(err.response?.data?.message || 'Neizdevās dzēst notikumu.');
     }
   };
 
@@ -185,13 +178,6 @@ function MyEvents() {
                 >
                   + Jauns notikums
                 </button>
-                <button
-                  type="button"
-                  onClick={loadEvents}
-                  className="btn-ghost"
-                >
-                  Atsvaidzināt
-                </button>
               </div>
             </div>
 
@@ -208,10 +194,7 @@ function MyEvents() {
                 <div className="card surface-strong p-6 text-muted">Ielādē notikumus...</div>
               ) : sortedEvents.length > 0 ? (
                 sortedEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="card surface-strong p-5 sm:p-6"
-                  >
+                  <div key={event.id} className="card surface-strong p-5 sm:p-6">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
@@ -248,18 +231,10 @@ function MyEvents() {
                       </div>
 
                       <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openEditor(event)}
-                          className="btn-primary px-4 py-2 text-sm"
-                        >
+                        <button type="button" onClick={() => openEditor(event)} className="btn-primary px-4 py-2 text-sm">
                           Labot
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(event.id)}
-                          className="btn-ghost px-4 py-2 text-sm"
-                        >
+                        <button type="button" onClick={() => handleDelete(event.id)} className="btn-ghost px-4 py-2 text-sm">
                           Dzēst
                         </button>
                       </div>
@@ -298,7 +273,11 @@ function MyEvents() {
       {showCreateModal && (
         <CreateSpecialDay
           onClose={() => setShowCreateModal(false)}
-          onSuccess={() => loadEvents()}
+          onSuccess={(created) => {
+            queryClient.setQueryData(["user-special-days"], (current = []) => [created, ...current]);
+            queryClient.invalidateQueries({ queryKey: ["special-days"] });
+            setShowCreateModal(false);
+          }}
         />
       )}
 
@@ -379,7 +358,6 @@ function MyEvents() {
                     checked={!formData.is_public}
                     onChange={(e) => {
                       const isPrivate = e.target.checked;
-                      setShareWithOthers(isPrivate);
                       setFormData({
                         ...formData,
                         is_public: !isPrivate,
@@ -392,52 +370,53 @@ function MyEvents() {
               </div>
             </div>
 
-            {!formData.is_public && <div className="rounded-2xl border border-white/80 bg-white/75 p-4">
-              <div className="mb-3">
-                <h3 className="text-sm font-bold text-dark-purple">Kas var redzēt šo notikumu?</h3>
-                <p className="mt-1 text-xs text-muted">
-                  Izvēlies konkrētus lietotājus. Notikums būs redzams tev un izvēlētajiem cilvēkiem.
-                </p>
-              </div>
+            {!formData.is_public && (
+              <div className="rounded-2xl border border-white/80 bg-white/75 p-4">
+                <div className="mb-3">
+                  <h3 className="text-sm font-bold text-dark-purple">Kas var redzēt šo notikumu?</h3>
+                  <p className="mt-1 text-xs text-muted">
+                    Izvēlies konkrētus lietotājus. Notikums būs redzams tev un izvēlētajiem cilvēkiem.
+                  </p>
+                </div>
 
-              {loadingUsers ? (
-                <div className="text-sm text-muted">Ielādē lietotājus...</div>
-              ) : users.length > 0 ? (
-                <div className="grid max-h-60 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                  {users.map((user) => {
-                    const checked = formData.shared_user_ids.includes(user.id);
-                    return (
-                      <button
-                        key={user.id}
-                        type="button"
-                        onClick={() => toggleSharedUser(user.id)}
-                        className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left transition ${
-                          checked
-                            ? 'border-medium-purple bg-medium-purple/10'
-                            : 'border-white/80 bg-white hover:bg-gray-50'
-                        }`}
-                      >
-                        <div>
-                          <div className="text-sm font-semibold text-dark-purple">
-                            {user.first_name} {user.last_name}
-                          </div>
-                        </div>
-                        <span
-                          className={`rounded-full px-2 py-1 text-xs font-bold ${
-                            checked ? 'bg-medium-purple text-white' : 'bg-gray-100 text-gray-600'
+                {usersLoading ? (
+                  <div className="text-sm text-muted">Ielādē lietotājus...</div>
+                ) : users && users.length > 0 ? (
+                  <div className="grid max-h-60 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                    {users.map((user) => {
+                      const checked = formData.shared_user_ids.includes(user.id);
+                      return (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => toggleSharedUser(user.id)}
+                          className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left transition ${
+                            checked
+                              ? 'border-medium-purple bg-medium-purple/10'
+                              : 'border-white/80 bg-white hover:bg-gray-50'
                           }`}
                         >
-                          {checked ? 'Pievienots' : 'Pievienot'}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
-              )}
-            </div>
-            }
+                          <div>
+                            <div className="text-sm font-semibold text-dark-purple">
+                              {user.first_name} {user.last_name}
+                            </div>
+                          </div>
+                          <span
+                            className={`rounded-full px-2 py-1 text-xs font-bold ${
+                              checked ? 'bg-medium-purple text-white' : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {checked ? 'Pievienots' : 'Pievienot'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
+                )}
+              </div>
+            )}
 
             {error && (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

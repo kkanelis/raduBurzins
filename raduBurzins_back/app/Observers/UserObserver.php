@@ -2,8 +2,8 @@
 
 namespace App\Observers;
 
-use App\Models\User;
 use App\Models\SpecialDay;
+use App\Models\User;
 
 class UserObserver
 {
@@ -12,17 +12,12 @@ class UserObserver
         if ($user->date_of_birth) {
             SpecialDay::create([
                 'user_id' => $user->id,
-                'title' => $user->name . ' svin dzimšanas dienu!',
+                'title' => $user->name.' svin dzimšanas dienu!',
                 'description' => '',
                 'date' => $user->date_of_birth,
                 'repeats' => true,
-                'is_approved' => true
+                'is_approved' => true,
             ]);
         }
-    }
-
-    public function deleted(User $user)
-    {
-        // Special days will be automatically deleted due to cascade delete
     }
 }

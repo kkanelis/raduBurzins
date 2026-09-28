@@ -3,16 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SpecialDayResource\Pages;
-use App\Filament\Resources\SpecialDayResource\RelationManagers;
 use App\Models\SpecialDay;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Table;
 
 class SpecialDayResource extends Resource
 {

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\SpecialDay;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class SpecialDayController extends Controller
 {
@@ -16,8 +15,8 @@ class SpecialDayController extends Controller
         $events = SpecialDay::query()
             ->latest()
             ->get()
-            ->filter(function (SpecialDay $specialDay) use ($request, $userId) {
-                
+            ->filter(function (SpecialDay $specialDay) use ($userId) {
+
                 if ($specialDay->is_public) {
                     return true;
                 }
@@ -69,13 +68,6 @@ class SpecialDayController extends Controller
             'message' => 'Notikums izveidots veiksmīgi.',
             'special_day' => $this->normalizeEvent($specialDay->fresh()),
         ], 201);
-    }
-
-    public function show(SpecialDay $specialDay): JsonResponse
-    {
-        $this->authorizeOwnerOrPublic($specialDay);
-
-        return response()->json($this->normalizeEvent($specialDay));
     }
 
     public function update(Request $request, SpecialDay $specialDay): JsonResponse
@@ -142,6 +134,8 @@ class SpecialDayController extends Controller
         return response()->json($specialDays);
     }
 
+    // citas nepieciešamās funkcijas
+    
     private function normalizeEvent(SpecialDay $specialDay): array
     {
         $data = $specialDay->toArray();
@@ -156,6 +150,7 @@ class SpecialDayController extends Controller
 
         if (is_string($value)) {
             $decoded = json_decode($value, true);
+
             return is_array($decoded) ? array_values(array_map('intval', $decoded)) : [];
         }
 

@@ -8,6 +8,7 @@ import BasePopup from '../BasePopoup';
 registerLocale('lv', lv);
 
 function CreateSpecialDay({ onClose, onSuccess }) {
+  // Form state
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -18,19 +19,18 @@ function CreateSpecialDay({ onClose, onSuccess }) {
     event_time: '',
     shared_user_ids: [],
   });
-  const [shareWithOthers, setShareWithOthers] = useState(false);
   const [error, setError] = useState('');
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
 
+  // User lookup for shared events
   useEffect(() => {
     const loadUsers = async () => {
       try {
         const response = await api.get('/api/users');
-        const users = [...(response.data || [])];
-        setUsers(users);
-      } catch (err) {
-        setError("Neizdevās ielādēt lietotājus!")
+        setUsers(Array.isArray(response.data) ? response.data : []);
+      } catch {
+        setError('Neizdevās ielādēt lietotājus!');
       } finally {
         setLoadingUsers(false);
       }
@@ -67,8 +67,6 @@ function CreateSpecialDay({ onClose, onSuccess }) {
       const response = await api.post('/api/special-days', payload);
       onSuccess(response.data);
       onClose();
-
-      console.log(response);
     } catch (err) {
       setError(err.response?.data?.message || 'Neizdevās izveidot notikumu');
     }
@@ -153,61 +151,67 @@ function CreateSpecialDay({ onClose, onSuccess }) {
           <label className="flex items-center gap-2 rounded-xl border border-white/70 bg-white/70 px-4 py-3">
             <input
               type="checkbox"
-              checked={shareWithOthers}
+              checked={!formData.is_public}
               onChange={(e) => {
-                setFormData({ ...formData, is_public: e.target.checked });
-                setShareWithOthers(e.target.checked);
+                const isPrivate = e.target.checked;
+                setFormData({
+                  ...formData,
+                  is_public: !isPrivate,
+                  shared_user_ids: isPrivate ? formData.shared_user_ids : [],
+                });
               }}
             />
             <span className="text-sm text-dark-purple">Privāts pasākums</span>
           </label>
         </div>
 
-        {formData.is_public && <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
-          <div className="mb-3">
-            <h3 className="text-sm font-bold text-dark-purple">Kas var redzēt šo notikumu?</h3>
-            <p className="mt-1 text-xs text-muted">
-              Izvēlies konkrētus lietotājus. Notikums būs redzams tev un izvēlētajiem cilvēkiem.
-            </p>
-          </div>
+        {!formData.is_public && (
+          <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-bold text-dark-purple">Kas var redzēt šo notikumu?</h3>
+              <p className="mt-1 text-xs text-muted">
+                Izvēlies konkrētus lietotājus. Notikums būs redzams tev un izvēlētajiem cilvēkiem.
+              </p>
+            </div>
 
-          {loadingUsers ? (
-            <div className="text-sm text-muted">Ielādē lietotājus...</div>
-          ) : users.length > 0 ? (
-            <div className="grid max-h-60 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-              {users.map((user) => {
-                const checked = formData.shared_user_ids.includes(user.id);
-                return (
-                  <button
-                    key={user.id}
-                    type="button"
-                    onClick={() => toggleSharedUser(user.id)}
-                    className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left transition ${
-                      checked
-                        ? 'border-medium-purple bg-medium-purple/10'
-                        : 'border-white/80 bg-white hover:bg-gray-50'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-sm font-semibold text-dark-purple">
-                        {user.first_name} {user.last_name}
-                      </div>
-                    </div>
-                    <span
-                      className={`rounded-full px-2 py-1 text-xs font-bold ${
-                        checked ? 'bg-medium-purple text-white' : 'bg-gray-100 text-gray-600'
+            {loadingUsers ? (
+              <div className="text-sm text-muted">Ielādē lietotājus...</div>
+            ) : users.length > 0 ? (
+              <div className="grid max-h-60 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                {users.map((user) => {
+                  const checked = formData.shared_user_ids.includes(user.id);
+                  return (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => toggleSharedUser(user.id)}
+                      className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left transition ${
+                        checked
+                          ? 'border-medium-purple bg-medium-purple/10'
+                          : 'border-white/80 bg-white hover:bg-gray-50'
                       }`}
                     >
-                      {checked ? 'Pievienots' : 'Pievienot'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
-          )}
-        </div>}
+                      <div>
+                        <div className="text-sm font-semibold text-dark-purple">
+                          {user.first_name} {user.last_name}
+                        </div>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs font-bold ${
+                          checked ? 'bg-medium-purple text-white' : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {checked ? 'Pievienots' : 'Pievienot'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
+            )}
+          </div>
+        )}
 
         <div className="flex justify-end gap-3">
           <button type="button" onClick={onClose} className="btn-ghost">Atcelt</button>
