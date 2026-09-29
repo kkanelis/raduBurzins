@@ -174,38 +174,30 @@ function FamilyChat() {
   }, [queryClient, user]);
 
   return (
-    <div className="relative h-[calc(100vh-5rem)] min-h-0 overflow-hidden bg-[#f7f3ef]">
-      <div className="pointer-events-none absolute inset-0 hero-grid opacity-40" />
+    <div className="relative h-[calc(100vh-5rem)] min-h-0 overflow-hidden bg-[#f5f7f3]">
+      <div className="pointer-events-none absolute inset-0 hero-grid opacity-25" />
 
-      <div className="section-shell relative h-full min-h-0 py-4 sm:py-6">
-        <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.8rem] border border-[#efe4dc] bg-white/90 shadow-[0_18px_40px_rgba(56,45,91,0.08)] backdrop-blur-sm">
-          <div className="border-b border-white/10 bg-gradient-to-r from-[#382d5b] via-[#473a6b] to-[#5b4e7d] px-5 py-5 text-white sm:px-8 sm:py-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/90">
-                  <span>💬</span>
-                  <span>Ģimenes čats</span>
-                </div>
-                <h1 className="text-[1.6rem] font-black leading-tight text-white sm:text-[2rem]">
-                  Kopīgā saruna visai ģimenei
-                </h1>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-white/75">
-                  Ziņas, bildes un mazie ikdienas jaunumi vienuviet.
-                </p>
+      <div className="section-shell relative h-full min-h-0 py-3 sm:py-5">
+        <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[#e1e7df] bg-white shadow-[0_16px_40px_rgba(39,48,39,0.09)]">
+          <div className="flex items-center justify-between gap-3 border-b border-[#e8ece6] bg-white px-4 py-3 sm:px-6 sm:py-4">
+            <div className="min-w-0">
+              <div className="eyebrow mb-2">
+                <span aria-hidden="true">✦</span>
+                <span>Ģimene</span>
               </div>
+              <h1 className="text-xl font-black text-dark-purple sm:text-2xl">Ģimenes čats</h1>
+              <p className="mt-1 text-sm text-muted">Kopīgā saruna</p>
+            </div>
 
-              <div className="shrink-0 rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-center shadow-inner shadow-white/5">
-                <div className="text-xl font-black leading-none">{messages.length}</div>
-                <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/65">
-                  ziņas
-                </div>
-              </div>
+            <div className="shrink-0 rounded-lg border border-[#e1e9e0] bg-[#f4f7f2] px-3 py-2 text-center">
+              <div className="text-lg font-extrabold leading-none text-[#3d5d43]">{messages.length}</div>
+              <div className="mt-1 text-[10px] font-bold uppercase text-muted">ziņas</div>
             </div>
           </div>
 
           <div
             ref={messagesContainerRef}
-            className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(88,70,126,0.06),_transparent_50%),_#fcfaf8] px-4 py-5 sm:px-8 sm:py-6"
+            className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-[#f8faf7] px-3 py-4 sm:px-6 sm:py-5"
           >
             {error ? (
               <div className="flex min-h-64 items-center justify-center text-center text-sm font-semibold text-[#9b4d4d]">
@@ -219,18 +211,18 @@ function FamilyChat() {
                   <div key={message.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[88%] sm:max-w-[72%] ${mine ? "items-end" : "items-start"}`}>
                       <div className={`mb-1.5 flex items-center gap-2 px-1 text-[11px] ${mine ? "justify-end" : ""}`}>
-                        <span className="font-bold text-[#382d5b]">{mine ? "Tu" : message.fromName}</span>
-                        <span className="text-[#9b8f86]">{formatTime(message.createdAt)}</span>
+                        <span className="font-bold text-[#425b46]">{mine ? "Tu" : message.fromName}</span>
+                        <span className="text-[#858d83]">{formatTime(message.createdAt)}</span>
                       </div>
 
                       <div
-                        className={`overflow-hidden rounded-[1.4rem] px-4 py-3 shadow-[0_10px_24px_rgba(56,45,91,0.06)] transition ${
+                        className={`overflow-hidden rounded-xl px-4 py-3 shadow-sm transition ${
                           mine
-                            ? "rounded-br-md bg-gradient-to-br from-[#58467e] to-[#483a6a] text-white"
-                            : "rounded-bl-md border border-[#eee5dc] bg-white text-[#382d5b]"
+                            ? "rounded-br-sm bg-[#526f59] text-white"
+                            : "rounded-bl-sm border border-[#e3e9e1] bg-white text-dark-purple"
                         }`}
                       >
-                        {message.text && <div className="whitespace-pre-wrap text-sm leading-6">{message.text}</div>}
+                        {message.text && <div className="whitespace-pre-wrap break-words text-sm leading-6">{message.text}</div>}
                         {message.photo && (
                           <div className={message.text ? "mt-3" : "-mx-4 -my-3"}>
                             <img
@@ -246,40 +238,41 @@ function FamilyChat() {
                 );
               })
             ) : loading ? (
-              <div className="flex min-h-64 items-center justify-center text-sm font-semibold text-[#9b8f86]">
+              <div className="flex min-h-64 items-center justify-center text-sm font-semibold text-muted">
                 Ielādē ģimenes čatu...
               </div>
             ) : (
-              <div className="flex min-h-64 flex-col items-center justify-center text-center text-[#9b8f86]">
-                <span className="mb-3 text-4xl">✦</span>
-                Nav ziņu. Uzraksti pirmo!
+              <div className="flex min-h-64 flex-col items-center justify-center text-center text-muted">
+                <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#edf3ed] text-xl text-[#526f59]" aria-hidden="true">✦</span>
+                <span className="text-sm font-semibold">Nav ziņu. Uzraksti pirmo!</span>
               </div>
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="border-t border-[#efe4dc] bg-white/80 p-4 sm:p-5">
+          <form onSubmit={handleSubmit} className="border-t border-[#e8ece6] bg-white p-3 sm:p-4">
             {photoDataUrl && (
-              <div className="mb-3 flex items-center gap-3 rounded-2xl border border-[#e9ddd4] bg-[#faf7f4] p-2 shadow-sm">
-                <img src={photoDataUrl} alt="Priekšskatījums" className="h-14 w-14 rounded-xl object-cover" />
-                <div className="min-w-0 flex-1 text-xs font-semibold text-[#58467e]">{selectedPhotoName}</div>
+              <div className="mb-3 flex items-center gap-3 rounded-lg border border-[#e1e9e0] bg-[#f7f9f6] p-2">
+                <img src={photoDataUrl} alt="Priekšskatījums" className="h-12 w-12 shrink-0 rounded-md object-cover" />
+                <div className="min-w-0 flex-1 truncate text-xs font-semibold text-[#425b46]">{selectedPhotoName}</div>
                 <button
                   type="button"
                   onClick={clearPhoto}
-                  className="rounded-xl px-3 py-2 text-xs font-bold text-[#9b4d4d] transition hover:bg-white"
+                  className="shrink-0 rounded-md px-3 py-2 text-xs font-bold text-[#9b4d4d] transition hover:bg-white"
                 >
                   Noņemt
                 </button>
               </div>
             )}
 
-            <div className="flex items-end gap-2 rounded-[1.35rem] border border-[#e5dbd2] bg-[#fcfaf8] p-2 shadow-inner shadow-[#f1e6e0] focus-within:border-[#58467e] focus-within:shadow-[0_0_0_3px_rgba(88,70,126,0.12)]">
+            <div className="flex min-w-0 items-end gap-2 rounded-lg border border-[#dfe5dc] bg-[#fbfcfa] p-1.5 transition focus-within:border-[#66836b] focus-within:ring-2 focus-within:ring-[#66836b]/15">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl leading-none text-[#58467e] transition hover:bg-white hover:shadow-sm"
+                aria-label="Pievienot bildi"
                 title="Pievienot bildi"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-xl font-medium text-[#526f59] transition hover:bg-[#edf3ed]"
               >
-                ＋
+                <span aria-hidden="true">+</span>
               </button>
 
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
@@ -288,16 +281,19 @@ function FamilyChat() {
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder="Raksti ziņu visai ģimenei..."
+                aria-label="Ziņas teksts"
                 rows={1}
-                className="max-h-32 min-h-11 flex-1 resize-none border-0 bg-transparent px-2 py-3 text-sm text-[#382d5b] outline-none placeholder:text-[#aaa09a]"
+                className="max-h-32 min-h-10 min-w-0 flex-1 resize-none border-0 bg-transparent px-2 py-2.5 text-sm text-dark-purple outline-none placeholder:text-muted/70"
               />
 
               <button
                 type="submit"
                 disabled={sending}
-                className="h-11 rounded-xl bg-gradient-to-r from-[#58467e] to-[#483a6a] px-5 text-sm font-bold text-white shadow-[0_12px_20px_rgba(88,70,126,0.2)] transition hover:brightness-105 disabled:cursor-wait disabled:opacity-60"
+                aria-label="Sūtīt ziņu"
+                className="flex h-10 shrink-0 items-center justify-center rounded-md bg-[#526f59] px-4 text-sm font-bold text-white transition hover:bg-[#405a46] disabled:cursor-wait disabled:opacity-60"
               >
-                {sending ? "Sūta..." : "Sūtīt"}
+                <span className="hidden sm:inline">{sending ? "Sūta..." : "Sūtīt"}</span>
+                <span className="text-lg leading-none sm:hidden" aria-hidden="true">↑</span>
               </button>
             </div>
           </form>

@@ -155,117 +155,96 @@ function MyEvents() {
   return (
     <div className="relative overflow-hidden">
       <div className="absolute inset-0 hero-grid opacity-50 pointer-events-none" />
-      <div className="section-shell relative py-8 sm:py-12 lg:py-16">
-        <div className="space-y-6">
-          <div className="card surface-strong">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
+      <div className="section-shell relative py-5 sm:py-8 lg:py-10">
+        <div className="space-y-4 sm:space-y-5">
+          <div className="card surface-strong p-4 sm:p-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <div className="eyebrow">
-                  <span>✦</span>
+                  <span aria-hidden="true">✦</span>
                   <span>Notikumi</span>
                 </div>
-                <h1 className="section-title mt-3">Mani notikumi</h1>
-                <p className="mt-3 max-w-2xl text-sm text-muted sm:text-base">
-                  Šeit vari redzēt visus savus notikumus, tos labot, padarīt publiskus vai paslēpt, pievienot attēlu un citus datus.
+                <h1 className="mt-2 text-3xl font-black text-dark-purple">Mani notikumi</h1>
+                <p className="mt-2 max-w-xl text-sm text-muted">
+                  Savu notikumu pārvaldīšana.
                 </p>
               </div>
-
-              <div className="flex flex-wrap gap-2 self-start">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(true)}
-                  className="btn-primary"
-                >
-                  + Jauns notikums
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="btn-primary w-full sm:w-auto"
+              >
+                <span aria-hidden="true">+</span> Jauns notikums
+              </button>
             </div>
-
-            {error && (
-              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-            <div className="space-y-4">
-              {loading ? (
-                <div className="card surface-strong p-6 text-muted">Ielādē notikumus...</div>
-              ) : sortedEvents.length > 0 ? (
-                sortedEvents.map((event) => (
-                  <div key={event.id} className="card surface-strong p-5 sm:p-6">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-black text-dark-purple">{event.title}</h2>
-                          <span className={`rounded-full px-3 py-1 text-xs font-bold ${event.is_public ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                            {event.is_public ? 'Publisks' : 'Privāts'}
-                          </span>
-                          {event.repeats && (
-                            <span className="rounded-full bg-medium-purple/10 px-3 py-1 text-xs font-bold text-medium-purple">
-                              Atkārtojas
-                            </span>
-                          )}
-                        </div>
+          {error && (
+            <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
-                        <p className="max-w-3xl text-sm leading-7 text-muted sm:text-base">
-                          {event.description || 'Nav apraksta.'}
-                        </p>
-
-                        <div className="flex flex-wrap gap-2 text-sm">
-                          <span className="rounded-full bg-white/80 px-3 py-1 font-semibold text-dark-purple">
-                            📅 {formatDate(event.date)}
+          <div className="space-y-3">
+            {loading ? (
+              <div className="rounded-xl border border-[#e5e8e1] bg-white p-6 text-sm text-muted">Ielādē notikumus...</div>
+            ) : sortedEvents.length > 0 ? (
+              sortedEvents.map((event) => (
+                <article key={event.id} className="rounded-xl border border-[#e5e8e1] bg-white p-4 shadow-sm transition hover:border-[#ccd8cc] hover:shadow-md sm:p-5">
+                  <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="break-words text-lg font-extrabold text-dark-purple sm:text-xl">{event.title}</h2>
+                        <span className={`rounded-md px-2.5 py-1 text-xs font-bold ${event.is_public ? 'bg-[#eaf2e9] text-[#3f6b45]' : 'bg-[#fff2df] text-[#9b651a]'}`}>
+                          {event.is_public ? 'Publisks' : 'Privāts'}
+                        </span>
+                        {event.repeats && (
+                          <span className="rounded-md bg-[#f0f1f7] px-2.5 py-1 text-xs font-bold text-[#5c5878]">
+                            Atkārtojas katru gadu
                           </span>
-                          {event.event_time && (
-                            <span className="rounded-full bg-white/80 px-3 py-1 font-semibold text-dark-purple">
-                              🕒 {event.event_time}
-                            </span>
-                          )}
-                          {event.location && (
-                            <span className="rounded-full bg-white/80 px-3 py-1 font-semibold text-dark-purple">
-                              📍 {event.location}
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
 
-                      <div className="flex gap-2">
-                        <button type="button" onClick={() => openEditor(event)} className="btn-primary px-4 py-2 text-sm">
-                          Labot
-                        </button>
-                        <button type="button" onClick={() => handleDelete(event.id)} className="btn-ghost px-4 py-2 text-sm">
-                          Dzēst
-                        </button>
+                      {event.description && (
+                        <p className="mt-2 line-clamp-3 max-w-3xl break-words text-sm leading-6 text-muted">
+                          {event.description}
+                        </p>
+                      )}
+
+                      <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                        <span className="max-w-full break-words rounded-md bg-[#f4f6f2] px-3 py-2 text-xs font-semibold text-dark-purple sm:text-sm">
+                          <span className="text-muted">Datums</span><span aria-hidden="true"> · </span>{formatDate(event.date)}
+                        </span>
+                        {event.event_time && (
+                          <span className="rounded-md bg-[#f4f6f2] px-3 py-2 text-xs font-semibold text-dark-purple sm:text-sm">
+                            <span className="text-muted">Laiks</span><span aria-hidden="true"> · </span>{event.event_time}
+                          </span>
+                        )}
+                        {event.location && (
+                          <span className="max-w-full break-words rounded-md bg-[#f4f6f2] px-3 py-2 text-xs font-semibold text-dark-purple sm:text-sm">
+                            <span className="text-muted">Vieta</span><span aria-hidden="true"> · </span>{event.location}
+                          </span>
+                        )}
                       </div>
                     </div>
+
+                    <div className="flex w-full shrink-0 gap-2 sm:w-auto">
+                      <button type="button" onClick={() => openEditor(event)} className="btn-primary flex-1 rounded-lg px-4 py-2 text-sm sm:flex-none">
+                        Labot
+                      </button>
+                      <button type="button" onClick={() => handleDelete(event.id)} className="btn-ghost flex-1 rounded-lg border border-[#efd4ce] px-4 py-2 text-sm text-[#a24d3a] hover:bg-[#fff5f2] sm:flex-none">
+                        Dzēst
+                      </button>
+                    </div>
                   </div>
-                ))
-              ) : (
-                <div className="card surface-strong p-6 text-muted">
-                  Te vēl nav neviena notikuma. Pievieno kādu kalendārā, un tas parādīsies šeit.
-                </div>
-              )}
-            </div>
-
-            <aside className="space-y-4">
-              <div className="rounded-[1.5rem] border border-white/70 bg-white/80 p-5 shadow-soft">
-                <div className="eyebrow">💡 Padoms</div>
-                <p className="mt-3 text-sm leading-7 text-muted">
-                  Pievieno atrašanās vietu, laiku un attēlu, lai notikums būtu pilnīgāks un vieglāk pārskatāms.
-                </p>
+                </article>
+              ))
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#cfd8ce] bg-white/80 px-5 py-10 text-center">
+                <h2 className="text-base font-extrabold text-dark-purple">Notikumu vēl nav</h2>
+                <p className="mt-1 text-sm text-muted">Jauns notikums parādīsies šeit.</p>
               </div>
-
-              <div className="rounded-[1.5rem] border border-white/70 bg-white/80 p-5 shadow-soft">
-                <div className="eyebrow">🎯 Ko vari darīt</div>
-                <ul className="mt-4 space-y-3 text-sm text-muted">
-                  <li>• Atvērt notikumu un labot informāciju</li>
-                  <li>• Pievienot vai noņemt attēlu</li>
-                  <li>• Paslēpt notikumu no publiskā skata</li>
-                  <li>• Dzēst vecos notikumus</li>
-                </ul>
-              </div>
-            </aside>
+            )}
           </div>
         </div>
       </div>
@@ -283,9 +262,9 @@ function MyEvents() {
 
       {selectedEvent && (
         <BasePopup title={selectedEvent.title} onClose={closeEditor} width="760px">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="rounded-2xl border border-white/80 bg-white/75 p-4">
-              <div className="eyebrow">📝 Notikuma informācija</div>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="rounded-lg border border-[#e5e8e1] bg-white p-4 shadow-sm sm:p-5">
+              <h3 className="text-sm font-extrabold text-dark-purple">Notikuma informācija</h3>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
@@ -293,7 +272,7 @@ function MyEvents() {
                   <input
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full rounded-md border border-black/20 bg-white/90 px-3 py-2"
+                    className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"
                     required
                   />
                 </div>
@@ -304,7 +283,7 @@ function MyEvents() {
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full rounded-md border border-black/20 bg-white/90 px-3 py-2"
+                    className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"
                     required
                   />
                 </div>
@@ -316,7 +295,7 @@ function MyEvents() {
                   rows="4"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full rounded-md border border-black/20 bg-white/90 px-3 py-2"
+                  className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"
                 />
               </div>
 
@@ -326,7 +305,7 @@ function MyEvents() {
                   <input
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full rounded-md border border-black/20 bg-white/90 px-3 py-2"
+                    className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"
                     placeholder="Piemēram: Mājas, Rīga"
                   />
                 </div>
@@ -336,14 +315,14 @@ function MyEvents() {
                   <input
                     value={formData.event_time}
                     onChange={(e) => setFormData({ ...formData, event_time: e.target.value })}
-                    className="w-full rounded-md border border-black/20 bg-white/90 px-3 py-2"
+                    className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"
                     placeholder="Piemēram: 18:30"
                   />
                 </div>
               </div>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <label className="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/70 px-4 py-3">
+                <label className="flex items-center gap-3 rounded-lg border border-[#e5e8e1] bg-[#fcfcfa] px-4 py-3">
                   <input
                     type="checkbox"
                     checked={formData.repeats}
@@ -352,7 +331,7 @@ function MyEvents() {
                   <span className="text-sm font-medium text-dark-purple">Atkārtojas katru gadu</span>
                 </label>
 
-                <label className="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/70 px-4 py-3">
+                <label className="flex items-center gap-3 rounded-lg border border-[#e5e8e1] bg-[#fcfcfa] px-4 py-3">
                   <input
                     type="checkbox"
                     checked={!formData.is_public}
@@ -371,7 +350,7 @@ function MyEvents() {
             </div>
 
             {!formData.is_public && (
-              <div className="rounded-2xl border border-white/80 bg-white/75 p-4">
+              <div className="rounded-lg border border-[#e5e8e1] bg-white p-4 shadow-sm">
                 <div className="mb-3">
                   <h3 className="text-sm font-bold text-dark-purple">Kas var redzēt šo notikumu?</h3>
                   <p className="mt-1 text-xs text-muted">
@@ -390,10 +369,10 @@ function MyEvents() {
                           key={user.id}
                           type="button"
                           onClick={() => toggleSharedUser(user.id)}
-                          className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left transition ${
+                          className={`flex items-center justify-between rounded-lg border px-3 py-3 text-left transition ${
                             checked
-                              ? 'border-medium-purple bg-medium-purple/10'
-                              : 'border-white/80 bg-white hover:bg-gray-50'
+                              ? 'border-[#718b74] bg-[#edf3ed]'
+                              : 'border-[#e5e8e1] bg-white hover:bg-[#f7f9f6]'
                           }`}
                         >
                           <div>
@@ -403,7 +382,7 @@ function MyEvents() {
                           </div>
                           <span
                             className={`rounded-full px-2 py-1 text-xs font-bold ${
-                              checked ? 'bg-medium-purple text-white' : 'bg-gray-100 text-gray-600'
+                              checked ? 'bg-[#526f59] text-white' : 'bg-[#f1f2ef] text-gray-600'
                             }`}
                           >
                             {checked ? 'Pievienots' : 'Pievienot'}
@@ -419,16 +398,16 @@ function MyEvents() {
             )}
 
             {error && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
               </div>
             )}
 
-            <div className="flex flex-wrap justify-end gap-3">
-              <button type="button" onClick={closeEditor} className="btn-ghost">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+              <button type="button" onClick={closeEditor} className="btn-ghost w-full rounded-lg">
                 Atcelt
               </button>
-              <button type="submit" disabled={saving} className="btn-primary">
+              <button type="submit" disabled={saving} className="btn-primary w-full rounded-lg disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto">
                 {saving ? 'Saglabā...' : 'Saglabāt'}
               </button>
             </div>

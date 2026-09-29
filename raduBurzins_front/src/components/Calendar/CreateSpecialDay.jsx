@@ -58,7 +58,7 @@ function CreateSpecialDay({ onClose, onSuccess }) {
     try {
       const payload = {
         ...formData,
-        date: formData.date.toISOString().split('T')[0],
+        date: `${formData.date.getFullYear()}-${String(formData.date.getMonth() + 1).padStart(2, '0')}-${String(formData.date.getDate()).padStart(2, '0')}`,
         repeats: formData.repeats ? '1' : '0',
         is_public: formData.is_public,
         shared_with_user_ids: formData.shared_user_ids,

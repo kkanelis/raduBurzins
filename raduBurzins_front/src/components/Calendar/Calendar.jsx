@@ -20,7 +20,7 @@ const MONTH_NAMES = [
   'decembris',
 ];
 
-const WEEKDAY_LABELS = ['P', 'O', 'T', 'C', 'P', 'S', 'S'];
+const WEEKDAY_LABELS = ['Pr', 'Ot', 'Tr', 'Ce', 'Pk', 'Se', 'Sv'];
 
 // Kalendāra palīgfunkcijas
 
@@ -264,33 +264,27 @@ function Calendar() {
   return (
     <div className="relative overflow-hidden">
       <div className="absolute inset-0 hero-grid opacity-50 pointer-events-none" />
-      <div className="section-shell relative py-6 sm:py-8 lg:py-16">
-        <div className="space-y-5 sm:space-y-6">
-          <div className="card surface-strong p-4 sm:p-6 lg:p-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="section-shell relative py-4 sm:py-7 lg:py-10">
+        <div className="space-y-4 sm:space-y-5">
+          <div className="card surface-strong p-4 sm:p-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <div className="eyebrow">
-                  <span>✦</span>
+                  <span aria-hidden="true">✦</span>
                   <span>Kalendārs</span>
                 </div>
-                <h1 className="section-title mt-3">Kalendārs</h1>
-                <p className="mt-3 max-w-2xl text-sm text-muted sm:text-base">
-                  Skaties vārda dienas un dzimšanas dienas vienuviet. Pieskaries dienai, lai atvērtu detaļas.
+                <h1 className="mt-2 text-3xl font-black text-dark-purple">Kalendārs</h1>
+                <p className="mt-2 max-w-xl text-sm text-muted">
+                  Vārda dienas, dzimšanas dienas un ģimenes notikumi vienuviet.
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-start lg:justify-end">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2 sm:flex sm:shrink-0">
                 <button type="button" onClick={handleToday} className="btn-ghost w-full sm:w-auto">
                   Šodien
                 </button>
-                <button type="button" onClick={handlePreviousMonth} className="btn-ghost w-full sm:w-auto">
-                  ← Iepriekšējais
-                </button>
-                <button type="button" onClick={handleNextMonth} className="btn-ghost w-full sm:w-auto">
-                  Nākamais →
-                </button>
                 <button type="button" onClick={() => setShowCreateModal(true)} className="btn-primary w-full sm:w-auto">
-                  + Jauns notikums
+                  <span aria-hidden="true">+</span> Jauns notikums
                 </button>
               </div>
             </div>
@@ -302,20 +296,42 @@ function Calendar() {
             </div>
           )}
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="card surface-strong p-3 sm:p-4 lg:p-6">
-              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-lg sm:text-xl font-black text-dark-purple capitalize">{monthLabel}</h2>
-                <div className="text-sm text-muted">
-                  {loading ? 'Ielādē...' : 'Pieskaries dienai, lai atvērtu detaļas'}
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_230px]">
+            <div className="card surface-strong p-2.5 sm:p-4 lg:p-5">
+              <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={handlePreviousMonth}
+                    aria-label="Iepriekšējais mēnesis"
+                    title="Iepriekšējais mēnesis"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-black/10 bg-white text-lg font-bold text-dark-purple transition hover:bg-[#f1f4ef] focus:outline-none focus:ring-2 focus:ring-medium-purple/30"
+                  >
+                    <span aria-hidden="true">←</span>
+                  </button>
+                  <h2 className="min-w-0 flex-1 text-center text-lg font-black capitalize text-dark-purple sm:min-w-[12rem] sm:text-xl">
+                    {monthLabel}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    aria-label="Nākamais mēnesis"
+                    title="Nākamais mēnesis"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-black/10 bg-white text-lg font-bold text-dark-purple transition hover:bg-[#f1f4ef] focus:outline-none focus:ring-2 focus:ring-medium-purple/30"
+                  >
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <div className="hidden text-sm text-muted sm:block">
+                  {loading ? 'Ielādē...' : 'Izvēlies dienu detaļām'}
                 </div>
               </div>
 
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {WEEKDAY_LABELS.map((label, index) => (
                   <div
                     key={`${label}-${index}`}
-                    className="rounded-lg sm:rounded-xl bg-white/80 px-1.5 py-2 text-center text-[10px] sm:text-xs font-black uppercase tracking-[0.16em] sm:tracking-[0.18em] text-medium-purple"
+                    className="rounded-md bg-[#f1f4ef] px-0.5 py-2 text-center text-[10px] font-extrabold text-[#526456] sm:rounded-lg sm:py-2.5 sm:text-xs"
                   >
                     {label}
                   </div>
@@ -323,28 +339,29 @@ function Calendar() {
 
                 {monthCells.map((date, index) => {
                   if (!date) {
-                    return <div key={`empty-${index}`} className="min-h-[84px] sm:min-h-[104px] md:min-h-[120px] rounded-lg sm:rounded-2xl bg-white/35" />;
+                    return <div key={`empty-${index}`} aria-hidden="true" className="min-h-[64px] rounded-lg bg-[#f7f8f5] sm:min-h-[100px] sm:rounded-xl lg:min-h-[112px]" />;
                   }
 
                   const fullKey = formatDateKey(date);
                   const monthDayKey = formatMonthDayKey(date);
                   const names = resolveItems(nameDaysData, date);
+                  const surnames = surnameDaysByDate[fullKey] || surnameDaysByDate[monthDayKey] || [];
                   const birthdays = birthdayUsersByDate[fullKey] || birthdayUsersByDate[monthDayKey] || [];
                   const specials = resolveItems(specialDaysByDate, date);
                   const isToday = formatDateKey(new Date()) === fullKey;
                   const hasBirthday = birthdays.length > 0;
                   const hasEvent = specials.length > 0;
-                  const primaryItems = names;
+                  const hasSurnameDay = surnames.length > 0;
 
                   const cellClasses = [
-                    'min-h-[84px] sm:min-h-[104px] md:min-h-[120px] rounded-lg sm:rounded-2xl border p-2 sm:p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-medium-purple/30',
+                    'group flex min-h-[64px] flex-col rounded-lg border p-1.5 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-medium-purple/30 sm:min-h-[100px] sm:rounded-xl sm:p-2.5 lg:min-h-[112px]',
                     hasBirthday
-                      ? 'border-[#f28e6b] bg-[#fff3ec]'
+                      ? 'border-[#9bb99e] bg-[#f1f7f0] hover:bg-[#e9f3e8]'
                       : hasEvent
-                        ? 'border-emerald-300 bg-emerald-50'
+                        ? 'border-[#edb18f] bg-[#fff6f0] hover:bg-[#fff0e6]'
                         : isToday
-                          ? 'border-medium-purple bg-medium-purple/10'
-                          : 'border-white/80 bg-white/80',
+                          ? 'border-[#466c52] bg-[#edf4ed] ring-1 ring-[#466c52]/20'
+                          : 'border-[#e7e9e4] bg-white hover:border-[#b7c4b8] hover:bg-[#fbfcfa]',
                   ].join(' ');
 
                   return (
@@ -352,30 +369,32 @@ function Calendar() {
                       key={fullKey}
                       type="button"
                       onClick={() => openDay(date)}
+                      aria-label={`${date.getDate()}. ${MONTH_NAMES[currentMonth]}${isToday ? ', šodien' : ''}${hasSurnameDay ? ', uzvārda diena' : ''}${hasBirthday ? ', dzimšanas diena' : ''}${hasEvent ? ', īpašs notikums' : ''}`}
                       className={cellClasses}
                     >
-                      <div className="flex items-start justify-between gap-1.5">
-                        <span className="text-xs sm:text-sm font-black text-dark-purple leading-none">
+                      <div className="flex w-full items-center justify-between gap-1">
+                        <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-extrabold leading-none sm:h-7 sm:min-w-7 sm:text-sm ${isToday ? 'bg-[#315844] text-white' : 'text-[#29382d]'}`}>
                           {date.getDate()}
                         </span>
-                        
+                        {isToday && <span className="hidden text-[10px] font-bold text-[#315844] sm:inline">Šodien</span>}
                       </div>
 
-                      <div className="mt-2 sm:mt-3 space-y-1 overflow-hidden">
-                        {primaryItems.slice(0, 2).map((item) => (
+                      <div className="mt-1 hidden w-full space-y-1 overflow-hidden sm:block">
+                        {names.slice(0, 2).map((item) => (
                           <div
                             key={`${monthDayKey}-${item}`}
-                            className="line-clamp-1 text-[10px] sm:text-xs font-semibold text-dark-purple"
+                            className="line-clamp-1 text-[10px] font-semibold text-dark-purple lg:text-xs"
                           >
                             {item}
                           </div>
                         ))}
+                      </div>
 
-                        {!primaryItems.length && (
-                          <div className="text-[10px] sm:text-xs text-muted">
-                            Nav vārda dienas
-                          </div>
-                        )}
+                      <div className="mt-auto flex min-h-2 items-center gap-1.5 pt-1" aria-hidden="true">
+                        {names.length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-[#5372c9]" />}
+                        {hasSurnameDay && <span className="h-1.5 w-1.5 rounded-full bg-[#b77a23]" />}
+                        {hasBirthday && <span className="h-1.5 w-1.5 rounded-full bg-[#54805a]" />}
+                        {hasEvent && <span className="h-1.5 w-1.5 rounded-full bg-[#df8058]" />}
                       </div>
                     </button>
                   );
@@ -383,30 +402,25 @@ function Calendar() {
               </div>
             </div>
 
-            <aside className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-              <div className="rounded-[1.25rem] sm:rounded-[1.5rem] border border-white/70 bg-white/80 p-4 sm:p-5 shadow-soft">
-                <div className="eyebrow">📌 Leģenda</div>
-                <div className="mt-4 space-y-3 text-sm text-muted">
-                  <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-medium-purple" />
-                    <span>Vārda dienas</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-[#f28e6b]" />
-                    <span>Dzimšanas dienas</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-emerald-500" />
-                    <span>Īpaši notikumi</span>
-                  </div>
+            <aside className="rounded-xl border border-white/80 bg-white/75 p-4 shadow-soft sm:p-5">
+              <h2 className="text-sm font-extrabold text-dark-purple">Leģenda</h2>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted sm:grid-cols-1 sm:gap-3 sm:text-sm">
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#5372c9]" />
+                  <span>Vārda dienas</span>
                 </div>
-              </div>
-
-              <div className="rounded-[1.25rem] sm:rounded-[1.5rem] border border-white/70 bg-white/80 p-4 sm:p-5 shadow-soft">
-                <div className="eyebrow">💡 Padoms</div>
-                <p className="mt-3 text-sm leading-7 text-muted">
-                  Pieskaries dienai, lai redzētu vārda dienas, dzimšanas dienas, uzvārda dienas un notikumus vienā logā.
-                </p>
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#b77a23]" />
+                  <span>Uzvārda dienas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#54805a]" />
+                  <span>Dzimšanas dienas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#df8058]" />
+                  <span>Īpaši notikumi</span>
+                </div>
               </div>
             </aside>
           </div>
@@ -425,99 +439,101 @@ function Calendar() {
       )}
 
       {selectedDay && (
-        <BasePopup title={formatDateKey(selectedDay.date)} onClose={closeDayPopup} width="720px">
-          <div className="space-y-4">
-            <div className="rounded-2xl bg-white/90 p-4">
-              <div className="text-sm font-bold text-dark-purple">
-                {formatDisplayDate(selectedDay.date)}
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                <div className="text-xs font-black uppercase tracking-[0.18em] text-medium-purple">
-                  Vārda dienas
+        <BasePopup title={formatDisplayDate(selectedDay.date)} onClose={closeDayPopup} width="720px">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <section className="min-w-0 rounded-lg border border-[#d8e0fb] bg-white p-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-[#5372c9]" />
+                  <h4 className="text-xs font-bold uppercase text-muted">Vārda dienas</h4>
                 </div>
-                <div className="mt-3 space-y-2">
+                <div className="mt-3 flex flex-wrap gap-1.5">
                   {uniqueDayNames.length > 0 ? (
                     uniqueDayNames.map((name, index) => (
-                      <div key={`${name}-${index}`} className="rounded-xl bg-medium-purple/10 px-3 py-2 text-sm font-semibold text-dark-purple">
+                      <span key={`${name}-${index}`} className="rounded-md bg-[#f0f3ff] px-2.5 py-1.5 text-sm font-semibold text-dark-purple">
                         {name}
-                      </div>
+                      </span>
                     ))
                   ) : (
                     <div className="text-sm text-muted">Nav vārda dienu.</div>
                   )}
                 </div>
-              </div>
-
-              <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                <div className="text-xs font-black uppercase tracking-[0.18em] text-[#c85d36]">
-                  Dzimšanas dienas
-                </div>
-                <div className="mt-3 space-y-2">
-                  {uniqueDayBirthdays.length > 0 ? (
-                    uniqueDayBirthdays.map((user) => (
-                      <div key={user.id} className="rounded-xl bg-[#fff3ec] px-3 py-2 text-sm font-semibold text-dark-purple">
+              </section>
+              {uniqueDayBirthdays.length > 0 && (
+                <section className="min-w-0 rounded-lg border border-[#cfe0d0] bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-[#54805a]" />
+                    <h4 className="text-xs font-bold uppercase text-muted">Dzimšanas dienas</h4>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {uniqueDayBirthdays.map((user) => (
+                      <span key={user.id} className="rounded-md bg-[#f1f7f0] px-2.5 py-1.5 text-sm font-semibold text-dark-purple">
                         {user.first_name} {user.last_name}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted">Nav dzimšanas dienu.</div>
-                  )}
-                </div>
-              </div>
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                <div className="text-xs font-black uppercase tracking-[0.18em] text-light-purple">
-                  Uzvārda dienas
+            <div className="grid gap-3 sm:grid-cols-2">
+              <section className="min-w-0 rounded-lg border border-[#efdfc0] bg-white p-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-[#b77a23]" />
+                  <h4 className="text-xs font-bold uppercase text-muted">Uzvārda dienas</h4>
                 </div>
-                <div className="mt-3 space-y-2">
+                <div className="mt-3 flex flex-wrap gap-1.5">
                   {uniqueDaySurnames.length > 0 ? (
                     uniqueDaySurnames.map((name, index) => (
-                      <div key={`${name}-${index}`} className="rounded-xl bg-light-purple/10 px-3 py-2 text-sm font-semibold text-dark-purple">
+                      <span key={`${name}-${index}`} className="rounded-md bg-[#fff7e9] px-2.5 py-1.5 text-sm font-semibold text-dark-purple">
                         {name}
-                      </div>
+                      </span>
                     ))
                   ) : (
                     <div className="text-sm text-muted">Nav uzvārda dienu.</div>
                   )}
                 </div>
-              </div>
+              </section>
 
               {hasDaySpecials && (
-                <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                  <div className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
-                    Pasākuma informācija
+                <section className="min-w-0 rounded-lg border border-[#efcfbd] bg-[#fffaf7] p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-[#df8058]" />
+                    <h4 className="text-xs font-bold uppercase text-muted">Pasākumi</h4>
                   </div>
                   <div className="mt-3 space-y-2">
                     {daySpecials.map((event) => {
                       const repeatsYearly = Boolean(event.repeats);
                       const displayDate = repeatsYearly ? selectedDay.date : event.date;
                       return (
-                        <div key={event.id} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                          <div className="text-sm font-black text-dark-purple">{event.title}</div>
+                        <article key={event.id} className="rounded-md border border-[#f0ddcf] bg-white p-3 shadow-sm">
+                          <h5 className="break-words text-sm font-extrabold text-dark-purple">{event.title}</h5>
                           {event.description && (
-                            <p className="mt-2 text-sm leading-6 text-muted">{event.description}</p>
+                            <p className="mt-1.5 break-words text-sm leading-5 text-muted">{event.description}</p>
                           )}
-                          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-dark-purple">
-                            <span className="rounded-full bg-white px-3 py-1">📅 {formatDisplayDate(displayDate)}</span>
-                            {event.event_time && <span className="rounded-full bg-white px-3 py-1">🕒 {event.event_time}</span>}
-                            {event.location && <span className="rounded-full bg-white px-3 py-1">📍 {event.location}</span>}
-                            <span className="rounded-full bg-white px-3 py-1">
-                              {repeatsYearly ? 'Atkārtojas katru gadu' : 'Vienreizējs notikums'}
-                            </span>
-                            <span className="rounded-full bg-white px-3 py-1">
-                              {event.is_public !== false ? 'Publisks' : 'Privāts'}
-                            </span>
-                          </div>
-                        </div>
+                          <dl className="mt-3 grid grid-cols-2 gap-2">
+                            <div className="min-w-0 rounded-md bg-[#fff3ed] px-2.5 py-2">
+                              <dt className="text-[10px] font-bold uppercase text-muted">Datums</dt>
+                              <dd className="mt-0.5 break-words text-xs font-semibold text-dark-purple">{formatDisplayDate(displayDate)}</dd>
+                            </div>
+                            {event.event_time && (
+                              <div className="min-w-0 rounded-md bg-[#fff3ed] px-2.5 py-2">
+                                <dt className="text-[10px] font-bold uppercase text-muted">Laiks</dt>
+                                <dd className="mt-0.5 break-words text-xs font-semibold text-dark-purple">{event.event_time}</dd>
+                              </div>
+                            )}
+                            {event.location && (
+                              <div className="col-span-2 min-w-0 rounded-md bg-[#fff3ed] px-2.5 py-2">
+                                <dt className="text-[10px] font-bold uppercase text-muted">Vieta</dt>
+                                <dd className="mt-0.5 break-words text-xs font-semibold text-dark-purple">{event.location}</dd>
+                              </div>
+                            )}
+                          </dl>
+                        </article>
                       );
                     })}
                   </div>
-                </div>
+                </section>
               )}
             </div>
           </div>
