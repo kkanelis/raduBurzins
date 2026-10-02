@@ -18,8 +18,6 @@ const createPhotoEntry = (file = null) => ({
   image: file,
 });
 
-const createPreviewUrl = (file) => (file ? URL.createObjectURL(file) : "");
-
 function Albums() {
   const { user } = useAuth();
   const [albums, setAlbums] = useState([]);
@@ -34,6 +32,7 @@ function Albums() {
   const [formData, setFormData] = useState(emptyForm);
   const [photoForm, setPhotoForm] = useState({ title: "", note: "", image: null });
   const [photos, setPhotos] = useState([createPhotoEntry()]);
+  const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -43,6 +42,14 @@ function Albums() {
   const [albumSaving, setAlbumSaving] = useState(false);
   const [deletingPhoto, setDeletingPhoto] = useState(false);
   const [deletingAlbum, setDeletingAlbum] = useState(false);
+
+  useEffect(() => {
+    const previewUrls = photos.map((photo) => (photo.image ? URL.createObjectURL(photo.image) : ""));
+    setPhotoPreviewUrls(previewUrls);
+
+    return () => previewUrls.forEach((previewUrl) => previewUrl && URL.revokeObjectURL(previewUrl));
+  }, [photos]);
+
   const usersById = useMemo(() => new Map(users.map((user) => [String(user.id), user])), [users]);
   const selectedAlbum = useMemo(
     () => albums.find((album) => String(album.id) === String(selectedAlbumId)) || albums[0] || null,
@@ -481,60 +488,45 @@ function Albums() {
   return (
     <div className="relative overflow-hidden">
       <div className="absolute inset-0 hero-grid opacity-50 pointer-events-none" />
-      <div className="section-shell relative py-8 sm:py-12 lg:py-16">
-        <div className="space-y-6">
-          <section className="card surface-strong">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="space-y-3">
+      <div className="section-shell relative py-5 sm:py-8 lg:py-10">
+        <div className="space-y-4 sm:space-y-5">
+          <section className="card surface-strong p-4 sm:p-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <div className="eyebrow">
-                  <span>📚</span>
+                  <span aria-hidden="true">✦</span>
                   <span>Foto albumi</span>
                 </div>
-                <h1 className="section-title">Albumi no notikumiem, svētkiem un ikdienas mirkļiem</h1>
-                <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base">
-                  Veido albumus, pievieno daudz foto, skaties tos pilnekrāna skatā un pārlūko ar iepriekšējo / nākamo foto.
+                <h1 className="mt-2 text-3xl font-black text-dark-purple">Foto albumi</h1>
+                <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
+                  {loading ? "Ielādē albumus..." : `Albumi: ${stats.albums} · Foto: ${stats.photos}`}
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                <button type="button" onClick={() => setShowCreateModal(true)} className="btn-primary">
-                  + Jauns albums
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2 sm:flex sm:shrink-0">
+                <button type="button" onClick={() => setShowCreateModal(true)} className="btn-primary w-full sm:w-auto">
+                  <span aria-hidden="true">+</span> Jauns albums
                 </button>
-                <button type="button" onClick={loadAlbums} className="btn-ghost">
+                <button type="button" onClick={loadAlbums} className="btn-ghost w-full sm:w-auto">
                   Atsvaidzināt
                 </button>
               </div>
             </div>
-
-            {message ? (
-              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                {message}
-              </div>
-            ) : null}
-            {error ? (
-              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                {error}
-              </div>
-            ) : null}
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[1.5rem] border border-white/80 bg-white/75 p-4">
-                <div className="text-sm font-semibold text-muted">Albumi</div>
-                <div className="mt-2 text-3xl font-black text-dark-purple">{stats.albums}</div>
-              </div>
-              <div className="rounded-[1.5rem] border border-white/80 bg-white/75 p-4">
-                <div className="text-sm font-semibold text-muted">Foto</div>
-                <div className="mt-2 text-3xl font-black text-dark-purple">{stats.photos}</div>
-              </div>
-              <div className="rounded-[1.5rem] border border-white/80 bg-white/75 p-4">
-                <div className="text-sm font-semibold text-muted">Statuss</div>
-                <div className="mt-2 text-lg font-black text-dark-purple">{loading ? "Ielādē..." : "Gatavs"}</div>
-              </div>
-            </div>
           </section>
 
-          <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-            <aside className="space-y-3">
+          {message ? (
+            <div role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+              {message}
+            </div>
+          ) : null}
+          {error ? (
+            <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {error}
+            </div>
+          ) : null}
+
+          <div className="grid min-w-0 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <aside className="flex min-w-0 gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
               {albums.map((album) => {
                 const isActive = String(selectedAlbumId) === String(album.id);
                 return (
@@ -542,27 +534,25 @@ function Albums() {
                     key={album.id}
                     type="button"
                     onClick={() => setSelectedAlbumId(album.id)}
-                    className={`w-full rounded-[1.5rem] border p-4 text-left transition ${
-                      isActive ? "border-medium-purple bg-white shadow-md" : "border-white/70 bg-white/75 hover:bg-white"
+                    aria-pressed={isActive}
+                    className={`flex w-[min(78vw,260px)] shrink-0 items-center gap-3 rounded-lg border p-3 text-left transition lg:w-full ${
+                      isActive ? "border-[#829984] bg-white shadow-sm" : "border-[#e4e8e1] bg-white/75 hover:bg-white"
                     }`}
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7c5cff] to-[#12b5a6] text-2xl shadow-lg">
-                        {album.emoji || "📷"}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-3">
-                          <h2 className="truncate text-base font-black text-dark-purple">{album.title}</h2>
-                          <span className="rounded-full bg-medium-purple/10 px-2 py-1 text-xs font-bold text-medium-purple">
-                            {album.photos?.length || 0}
-                          </span>
-                        </div>
-                        <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted">
-                          {album.description || "Nav apraksta."}
-                        </p>
-                        <div className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-medium-purple">
-                          {album.category || "Albums"}
-                        </div>
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#edf2ec] text-2xl">
+                      {album.photos?.[0]?.image_path ? (
+                        <img src={album.photos[0].image_path} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        album.emoji || "📷"
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="truncate text-sm font-extrabold text-dark-purple">{album.title}</h2>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <span className="truncate text-xs text-muted">{album.category || "Albums"}</span>
+                        <span className="shrink-0 text-xs font-semibold text-[#58735e]">
+                          {album.photos?.length || 0} foto
+                        </span>
                       </div>
                     </div>
                   </button>
@@ -570,42 +560,44 @@ function Albums() {
               })}
             </aside>
 
-            <section className="space-y-4">
+            <section className="min-w-0 space-y-4">
               {selectedAlbum ? (
                 <>
-                  <div className="rounded-[1.75rem] border border-white/70 bg-white/88 p-5 shadow-soft sm:p-6">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-[#7c5cff] to-[#12b5a6] text-3xl shadow-lg">
-                          {selectedAlbum.emoji || "📷"}
-                        </div>
-                        <div>
-                          <div className="eyebrow">{selectedAlbum.category || "Albums"}</div>
-                          <h2 className="mt-3 text-2xl font-black text-dark-purple">{selectedAlbum.title}</h2>
-                          <p className="mt-2 max-w-2xl text-sm leading-7 text-muted sm:text-base">
-                            {selectedAlbum.description || "Nav apraksta."}
-                          </p>
-                          <div className="mt-2 text-xs font-semibold text-medium-purple">
-                            {selectedAlbum.is_public ? "Publisks" : "Tikai izvēlētajiem cilvēkiem"}
-                          </div>
-                        </div>
+                  <div className="flex flex-col gap-4 border-b border-[#e4e8e1] pb-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#edf2ec] text-2xl">
+                        {selectedAlbum.photos?.[0]?.image_path ? (
+                          <img src={selectedAlbum.photos[0].image_path} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          selectedAlbum.emoji || "📷"
+                        )}
                       </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold uppercase text-[#58735e]">{selectedAlbum.category || "Albums"}</div>
+                        <h2 className="mt-1 break-words text-xl font-black text-dark-purple sm:text-2xl">{selectedAlbum.title}</h2>
+                        {selectedAlbum.description && (
+                          <p className="mt-1 max-w-2xl break-words text-sm text-muted">{selectedAlbum.description}</p>
+                        )}
+                        <span className={`mt-2 inline-flex rounded-md px-2 py-1 text-xs font-bold ${selectedAlbum.is_public ? "bg-[#eaf2e9] text-[#3f6b45]" : "bg-[#fff2df] text-[#9b651a]"}`}>
+                          {selectedAlbum.is_public ? "Publisks" : "Tikai izvēlētajiem cilvēkiem"}
+                        </span>
+                      </div>
+                    </div>
 
-                      <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
                         {isAlbumCreator ? (
-                          <div>
-                            <button type="button" onClick={openAlbumEditor} className="btn-ghost px-4 py-2 text-sm">
+                          <>
+                            <button type="button" onClick={openAlbumEditor} className="btn-ghost w-full rounded-lg px-3 py-2 text-xs sm:w-auto sm:text-sm">
                               Labot albumu
                             </button>
-                            <button type="button" onClick={deleteAlbum} disabled={deletingAlbum} className="btn-ghost px-4 py-2 text-sm">
+                            <button type="button" onClick={deleteAlbum} disabled={deletingAlbum} className="btn-ghost w-full rounded-lg px-3 py-2 text-xs sm:w-auto sm:text-sm">
                               {deletingAlbum ? "Dzēš..." : "Dzēst albumu"}
                             </button>
-                            <button type="button" onClick={() => setShowAddPhotoPanel((current) => !current)} className="btn-ghost px-4 py-2 text-sm">
+                            <button type="button" onClick={() => setShowAddPhotoPanel((current) => !current)} className="btn-primary col-span-2 w-full rounded-lg px-3 py-2 text-xs sm:col-span-1 sm:w-auto sm:text-sm">
                               {showAddPhotoPanel ? "Aizvērt foto pievienošanu" : "Pievienot vēl foto"}
                             </button>
-                          </div>
+                          </>
                         ) : null}
-                      </div>
                     </div>
                   </div>
 
@@ -653,7 +645,7 @@ function Albums() {
                             <div key={`${photo.image.name}-${index}`} className="rounded-2xl border border-[#eee5dc] bg-[#fcfaf8] p-3">
                               <div className="flex items-start gap-3">
                                 <img
-                                  src={createPreviewUrl(photo.image)}
+                                  src={photoPreviewUrls[index] || ""}
                                   alt={photo.image.name}
                                   className="h-20 w-20 shrink-0 rounded-xl object-cover"
                                 />
@@ -695,25 +687,25 @@ function Albums() {
                   </div>
                   ) : null}
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     {selectedAlbum.photos?.map((item, index) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => openViewerAt(index)}
-                        className="card surface-strong overflow-hidden p-0 text-left transition hover:-translate-y-0.5"
+                        className="group min-w-0 overflow-hidden rounded-lg border border-[#e4e8e1] bg-white text-left transition hover:border-[#bdcdbf] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#66836b]/30"
                       >
-                        <div className="h-44 bg-gradient-to-br from-[#e6dccf] via-white to-[#f7f3ef]">
-                          <img src={item.image_path} alt={item.title} className="h-full w-full object-cover" />
+                        <div className="aspect-[4/3] overflow-hidden bg-[#edf1eb]">
+                          <img src={item.image_path} alt={item.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
                         </div>
-                        <div className="p-5">
-                          <div className="flex items-center justify-between gap-3">
-                            <h3 className="text-lg font-black text-dark-purple">{item.title}</h3>
-                            <span className="rounded-full bg-medium-purple/10 px-2 py-1 text-xs font-bold text-medium-purple">
+                        <div className="min-w-0 p-3 sm:p-4">
+                          <div className="flex min-w-0 items-center justify-between gap-2">
+                            <h3 className="min-w-0 truncate text-sm font-extrabold text-dark-purple sm:text-base">{item.title}</h3>
+                            <span className="shrink-0 rounded-md bg-[#f4f6f2] px-2 py-1 text-xs font-bold text-[#58735e]">
                               {item.likes_count || 0} ♥
                             </span>
                           </div>
-                          <p className="mt-2 text-sm leading-6 text-muted">{item.note || "Nav piezīmes."}</p>
+                          {item.note && <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted sm:text-sm">{item.note}</p>}
                         </div>
                       </button>
                     ))}
@@ -789,8 +781,6 @@ function Albums() {
 
               <div className="mt-4 grid gap-4">
                 {photos.map((photo, index) => {
-                  const previewUrl = createPreviewUrl(photo.image);
-
                   return (
                     <div key={index} className="rounded-[1.5rem] border border-white/80 bg-white p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -798,7 +788,7 @@ function Albums() {
                           <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/80 bg-warm-beige/30 shadow-sm">
                             {photo.image ? (
                               <img
-                                src={previewUrl}
+                                src={photoPreviewUrls[index] || ""}
                                 alt={photo.image.name || `Foto ${index + 1}`}
                                 className="h-full w-full object-cover"
                               />
@@ -1067,72 +1057,107 @@ function Albums() {
       ) : null}
 
       {showViewer && selectedPhoto ? (
-        <div className="modal-backdrop">
-          <div className="card surface-strong w-full max-w-5xl max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="eyebrow">Skatīt foto</div>
-                <h3 className="mt-2 text-2xl font-black text-dark-purple">{selectedPhoto.title}</h3>
-                <p className="mt-2 text-sm text-muted">{selectedPhoto.note || "Nav piezīmes."}</p>
+        <div className="modal-backdrop p-2 sm:p-4" onClick={() => setShowViewer(false)}>
+          <div
+            className="mx-auto flex h-full max-h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151a16] text-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={selectedPhoto.title || "Foto skatītājs"}
+          >
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-[#1b221c] px-3 py-3 sm:px-5">
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold uppercase text-[#a9b6a8]">{selectedAlbum?.title || "Albums"}</div>
+                <h2 className="mt-0.5 truncate text-sm font-extrabold sm:text-base">{selectedPhoto.title}</h2>
+                {selectedPhoto.note && <p className="mt-0.5 line-clamp-1 text-xs text-white/60">{selectedPhoto.note}</p>}
               </div>
-              <button type="button" className="btn-ghost h-10 w-10 !p-0" onClick={() => setShowViewer(false)}>
-                ✕
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="text-xs font-semibold text-white/65">
+                  {selectedPhotoIndex + 1} / {selectedAlbum?.photos?.length || 1}
+                </span>
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-lg text-white/75 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40"
+                  onClick={() => setShowViewer(false)}
+                  aria-label="Aizvērt foto"
+                  title="Aizvērt"
+                >
+                  ×
+                </button>
+              </div>
+            </header>
+
+            <div className="relative flex min-h-[40vh] flex-1 items-center justify-center overflow-hidden bg-[#0c0f0c] p-3 sm:min-h-0 sm:p-6">
+              <img
+                src={selectedPhoto.image_path}
+                alt={selectedPhoto.title}
+                className="max-h-[68vh] w-full object-contain sm:max-h-[74vh]"
+              />
+              <button
+                type="button"
+                onClick={goPrevious}
+                aria-label="Iepriekšējais foto"
+                title="Iepriekšējais foto"
+                className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-xl text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white/50 sm:left-4 sm:h-11 sm:w-11"
+              >
+                <span aria-hidden="true">←</span>
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                aria-label="Nākamais foto"
+                title="Nākamais foto"
+                className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-xl text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white/50 sm:right-4 sm:h-11 sm:w-11"
+              >
+                <span aria-hidden="true">→</span>
               </button>
             </div>
 
-            <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-white/80 bg-warm-beige/20">
-              <img src={selectedPhoto.image_path} alt={selectedPhoto.title} className="max-h-[58vh] w-full object-contain bg-black/5" />
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={goPrevious} className="btn-ghost">
-                  ← Iepriekšējais
-                </button>
-                <button type="button" onClick={goNext} className="btn-ghost">
-                  Nākamais →
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => handleReaction("❤️")} disabled={reactionLoading} className="btn-ghost">
+            <footer className="grid shrink-0 gap-2 border-t border-white/10 bg-[#1b221c] p-3 sm:flex sm:items-center sm:justify-between sm:px-5">
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                <button
+                  type="button"
+                  onClick={() => handleReaction("❤️")}
+                  disabled={reactionLoading}
+                  className="rounded-md border border-white/15 px-3 py-2 text-xs font-bold text-white/85 transition hover:bg-white/10 disabled:opacity-50 sm:text-sm"
+                >
                   ❤️ Patīk
                 </button>
-                <button type="button" onClick={removeReaction} disabled={reactionLoading} className="btn-ghost">
+                <button
+                  type="button"
+                  onClick={removeReaction}
+                  disabled={reactionLoading}
+                  className="rounded-md border border-white/15 px-3 py-2 text-xs font-bold text-white/70 transition hover:bg-white/10 disabled:opacity-50 sm:text-sm"
+                >
                   Noņemt reakciju
                 </button>
               </div>
-            </div>
-            {isAlbumCreator ? (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <button type="button" onClick={openPhotoEditor} className="btn-primary">
-                Labot foto
-              </button>
-              <button type="button" onClick={deletePhoto} disabled={deletingPhoto} className="btn-ghost">
-                {deletingPhoto ? "Dzēš..." : "Dzēst foto"}
-              </button>
-            </div>
-            ) : null}
+              {isAlbumCreator && (
+                <div className="grid grid-cols-2 gap-2 sm:flex">
+                  <button type="button" onClick={openPhotoEditor} className="rounded-md bg-[#526f59] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#63836a] sm:text-sm">
+                    Labot foto
+                  </button>
+                  <button type="button" onClick={deletePhoto} disabled={deletingPhoto} className="rounded-md border border-[#d89685]/40 px-3 py-2 text-xs font-bold text-[#f1b7a7] transition hover:bg-white/10 disabled:opacity-50 sm:text-sm">
+                    {deletingPhoto ? "Dzēš..." : "Dzēst foto"}
+                  </button>
+                </div>
+              )}
+            </footer>
 
             {selectedPhoto.reactions && Object.keys(selectedPhoto.reactions).length > 0 ? (
-              <div className="mt-4 rounded-2xl border border-white/80 bg-white/75 p-4">
-                <div className="text-sm font-bold text-dark-purple">Reakcijas</div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="max-h-24 shrink-0 overflow-y-auto border-t border-white/10 bg-[#171d18] px-3 py-2 sm:px-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase text-white/50">Reakcijas</span>
                   {Object.entries(selectedPhoto.reactions).map(([userId, reaction]) => {
                     const reactor = usersById.get(String(userId));
                     const reactorName = reactor
                       ? `${reactor.first_name || ""} ${reactor.last_name || ""}`.trim()
                       : `Lietotājs #${userId}`;
                     return (
-                      <div key={userId} className="flex items-center justify-between rounded-xl border border-white/80 bg-white px-3 py-2">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-dark-purple">{reactorName}</div>
-                          <div className="text-xs text-muted">Reakcija uz šo foto</div>
-                        </div>
-                        <span className="rounded-full bg-medium-purple/10 px-3 py-1 text-lg font-bold text-medium-purple">
-                          {reaction}
-                        </span>
-                      </div>
+                      <span key={userId} className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 text-xs text-white/80">
+                        <span className="truncate">{reactorName}</span>
+                        <span>{reaction}</span>
+                      </span>
                     );
                   })}
                 </div>

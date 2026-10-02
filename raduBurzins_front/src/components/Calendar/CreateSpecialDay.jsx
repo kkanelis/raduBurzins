@@ -65,7 +65,7 @@ function CreateSpecialDay({ onClose, onSuccess }) {
       };
 
       const response = await api.post('/api/special-days', payload);
-      onSuccess(response.data);
+      onSuccess(response.data?.special_day || response.data);
       onClose();
     } catch (err) {
       setError(err.response?.data?.message || 'Neizdevās izveidot notikumu');

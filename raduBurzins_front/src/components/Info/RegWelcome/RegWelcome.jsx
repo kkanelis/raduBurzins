@@ -1,109 +1,233 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../../services/api';
 
-const actions = [
-  {
-    title: 'Sākt no kalendāra',
-    text: 'Apskati šodienu, tuvākos datumus un ģimenes notikumus.',
-    icon: '📅',
-    to: '/calendar',
-    color: 'from-medium-purple to-[#8a6cff]',
-  },
-  {
-    title: 'Izveidot kaut ko jaunu',
-    text: 'Pievieno notikumu, ideju vai jebko, ko gribi paturēt redzamā vietā.',
-    icon: '➕',
-    to: '/my-events',
-    color: 'from-[#12b5a6] to-emerald-500',
-  },
-  {
-    title: 'Veidot albumus',
-    text: 'Sakārto foto no notikumiem, svētkiem un ikdienas mirkļiem vienuviet.',
-    icon: '📚',
-    to: '/albums',
-    color: 'from-[#7c5cff] to-[#4f8cff]',
-  },
-  {
-    title: 'Atvērt savu telpu',
-    text: 'Pārvaldi profilus, iestatījumus un visu, kas pieder tev.',
-    icon: '👤',
-    to: '/profile',
-    color: 'from-[#f28e6b] to-[#ffb37a]',
-  },
-  {
-    title: 'Tavi notikumi',
-    text: 'Skaties, labo un organizē visu vienuviet.',
-    icon: '🗂️',
-    to: '/my-events',
-    color: 'from-[#ff9f68] to-[#ffcf6b]',
-  },
-];
+function parseLocalDate(dateValue) {
+  const [year, month, day] = String(dateValue || '').slice(0, 10).split('-').map(Number);
+  if (!year || !month || !day) return null;
+
+  const date = new Date(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function getTodaysItems(responseData, propertyName, date) {
+  const monthDayKey = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const fullDateKey = `${date.getFullYear()}-${monthDayKey}`;
+
+  if (!Array.isArray(responseData)) {
+    const items = responseData?.[fullDateKey] || responseData?.[monthDayKey] || [];
+    return Array.isArray(items) ? items : [];
+  }
+
+  const matchingDay = responseData.find((item) => {
+    const rawDate = String(item.date || '');
+    return rawDate.length >= 10 ? rawDate.slice(5, 10) === monthDayKey : rawDate === monthDayKey;
+  });
+
+  return Array.isArray(matchingDay?.[propertyName]) ? matchingDay[propertyName] : [];
+}
+
+function getNextAnnualDate(dateValue, today) {
+  const originalDate = parseLocalDate(dateValue);
+  if (!originalDate) return null;
+
+  const nextDate = new Date(today.getFullYear(), originalDate.getMonth(), originalDate.getDate());
+  if (nextDate < today) nextDate.setFullYear(nextDate.getFullYear() + 1);
+  return nextDate;
+}
 
 function RegWelcome() {
+  const { data: nameDaysResponse = [], isLoading: loadingNameDays, isError: nameDaysError } = useQuery({
+    queryKey: ['namedays'],
+    queryFn: async () => {
+      const response = await api.get('/api/namedays');
+      return response.data || [];
+    },
+  });
+
+  const { data: surnameDaysResponse = [], isLoading: loadingSurnameDays, isError: surnameDaysError } = useQuery({
+    queryKey: ['surnames'],
+    queryFn: async () => {
+      const response = await api.get('/api/surnames');
+      return response.data || [];
+    },
+  });
+
+  const { data: specialDays = [], isLoading: loadingEvents, isError: eventsError } = useQuery({
+    queryKey: ['special-days'],
+    queryFn: async () => {
+      const response = await api.get('/api/special-days');
+      return Array.isArray(response.data) ? response.data : [];
+    },
+  });
+
+  const { data: usersStatus = {}, isLoading: loadingUsers, isError: usersError } = useQuery({
+    queryKey: ['users-status'],
+    queryFn: async () => {
+      const response = await api.get('/api/users/status');
+      return response.data || {};
+    },
+  });
+
+  const upcomingDates = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const eventDates = specialDays.map((event) => {
+      const date = event.repeats ? getNextAnnualDate(event.date, today) : parseLocalDate(event.date);
+      if (!date || date < today) return null;
+
+      return {
+        id: `event-${event.id}`,
+        title: event.title,
+        date,
+        type: 'Pasākums',
+        detail: [event.event_time, event.location].filter(Boolean).join(' · '),
+        isBirthday: false,
+      };
+    });
+
+    const birthdayUsers = Array.isArray(usersStatus.users) ? usersStatus.users : [];
+    const birthdays = Array.from(new Map(birthdayUsers.map((user) => [user.id, user])).values())
+      .filter((user) => user.date_of_birth)
+      .map((user) => ({
+        id: `birthday-${user.id}`,
+        title: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Dzimšanas diena',
+        date: getNextAnnualDate(user.date_of_birth, today),
+        type: 'Dzimšanas diena',
+        detail: '',
+        isBirthday: true,
+      }));
+
+    return [...eventDates, ...birthdays]
+      .filter(Boolean)
+      .sort((first, second) => first.date - second.date)
+      .slice(0, 5);
+  }, [specialDays, usersStatus.users]);
+
+  const loading = loadingEvents || loadingUsers;
+  const hasError = eventsError || usersError;
+  const today = new Date();
+  const todaysNameDays = getTodaysItems(nameDaysResponse, 'names', today);
+  const todaysSurnameDays = getTodaysItems(surnameDaysResponse, 'surnames', today);
+  const loadingToday = loadingNameDays || loadingSurnameDays;
+  const todayError = nameDaysError || surnameDaysError;
+
   return (
     <div className="relative overflow-hidden">
       <div className="absolute inset-0 hero-grid opacity-50 pointer-events-none" />
 
-      <div className="section-shell relative py-6 sm:py-10 lg:py-16">
-        <div className="space-y-6 sm:space-y-8">
-          <section className="grid gap-5 rounded-[2rem] border border-white/70 bg-white/88 p-4 shadow-[0_20px_60px_rgba(58,39,99,0.12)] backdrop-blur-xl sm:p-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8 lg:p-8">
-            <div className="space-y-5">
+      <div className="section-shell relative py-5 sm:py-8 lg:py-10">
+        <div className="space-y-4 sm:space-y-5">
+          <section className="card surface-strong p-4 sm:p-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
               <div className="eyebrow">
-                <span>✦</span>
-                <span>Radu Burziņš</span>
-              </div>
-
-              <div className="space-y-4">
-                <h1 className="max-w-3xl text-4xl font-black leading-tight tracking-tight text-dark-purple sm:text-5xl lg:text-6xl">
-                  Ko gribi darīt
-                  <span className="block bg-gradient-to-r from-medium-purple via-light-purple to-[#12b5a6] bg-clip-text text-transparent">
-                    tieši tagad?
-                  </span>
-                </h1>
-
-                <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base">
-                  Šī sākumlapa dod tev izvēli - nevis tikai vienu ceļu. Atver kalendāru, veido notikumus,
-                  skaties profilu.
+                  <span aria-hidden="true">✦</span>
+                  <span>Radu Burziņš</span>
+                </div>
+                <h1 className="mt-2 text-3xl font-black text-dark-purple">Ģimenes sākums</h1>
+                <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
+                  {loading ? 'Ielādē tuvākos datumus...' : 'Tuvākie notikumi un ģimenes jaunumi vienuviet.'}
                 </p>
               </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Link to="/calendar" className="btn-primary px-6 py-3 text-sm sm:text-base no-underline">
-                  Atvērt kalendāru
-                </Link>
-                <Link to="/my-events" className="btn-ghost px-6 py-3 text-sm sm:text-base no-underline">
-                  Izveidot notikumu
-                </Link>
-                <Link to="/albums" className="btn-ghost px-6 py-3 text-sm sm:text-base no-underline">
-                  Albumi
-                </Link>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 sm:grid-rows-2">
-              {actions.map((action) => (
-                <Link
-                  key={action.title}
-                  to={action.to}
-                  className="group flex min-h-[148px] flex-col justify-between rounded-[1.5rem] border border-white/80 bg-white p-4 no-underline shadow-soft transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-[162px]"
-                >
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${action.color} text-2xl shadow-lg`}>
-                    {action.icon}
-                  </div>
-
-                  <div className="pt-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <h2 className="text-base font-black text-dark-purple">{action.title}</h2>
-                      <span className="text-sm font-bold text-medium-purple transition group-hover:translate-x-1">
-                        →
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm leading-6 text-muted">{action.text}</p>
-                  </div>
-                </Link>
-              ))}
             </div>
           </section>
+
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(250px,0.65fr)]">
+            <section className="card surface-strong p-4 sm:p-6">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-black text-dark-purple sm:text-xl">Tuvākie datumi</h2>
+              </div>
+
+              {hasError ? (
+                <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  Neizdevās ielādēt tuvākos datumus.
+                </div>
+              ) : loading ? (
+                <div className="py-6 text-sm text-muted">Ielādē tuvākos datumus...</div>
+              ) : upcomingDates.length > 0 ? (
+                <div className="divide-y divide-[#ece9e5]">
+                  {upcomingDates.map((item) => (
+                    <Link
+                      key={item.id}
+                      to="/calendar"
+                      className="group grid grid-cols-[52px_minmax(0,1fr)] items-center gap-3 py-3 no-underline first:pt-1 last:pb-1 sm:grid-cols-[58px_minmax(0,1fr)_auto]"
+                    >
+                      <div className={`flex h-12 w-12 flex-col items-center justify-center rounded-lg ${item.isBirthday ? 'bg-[#eaf2e9] text-[#3f6b45]' : 'bg-[#fff0e8] text-[#a95e3e]'}`}>
+                        <span className="text-lg font-black leading-none">{item.date.getDate()}</span>
+                        <span className="mt-1 text-[9px] font-bold uppercase leading-none">
+                          {item.date.toLocaleDateString('lv-LV', { month: 'short' }).replace('.', '')}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-extrabold text-dark-purple group-hover:text-medium-purple">{item.title}</div>
+                        <div className="mt-0.5 truncate text-xs text-muted">
+                          {item.type}{item.detail ? ` · ${item.detail}` : ''}
+                        </div>
+                      </div>
+                      <span className={`col-start-2 w-fit rounded-md px-2 py-1 text-[10px] font-bold sm:col-start-auto ${item.isBirthday ? 'bg-[#eaf2e9] text-[#3f6b45]' : 'bg-[#fff0e8] text-[#a95e3e]'}`}>
+                        {item.date.toLocaleDateString('lv-LV', { day: 'numeric', month: 'long' })}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-6 text-sm text-muted">Tuvākajā laikā nav gaidāmu pasākumu vai dzimšanas dienu.</p>
+              )}
+            </section>
+
+            <section className="card surface-strong p-4 sm:p-6">
+              <div className="mb-1 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-black text-dark-purple sm:text-xl">Šodiena</h2>
+              </div>
+              <p className="mb-4 text-sm text-muted">
+                {today.toLocaleDateString('lv-LV', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
+
+              {todayError ? (
+                <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  Neizdevās ielādēt šodienas vārdadienas.
+                </div>
+              ) : loadingToday ? (
+                <p className="py-3 text-sm text-muted">Ielādē šodienas vārdadienas...</p>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-xs font-bold uppercase text-medium-purple">Vārda dienas</h3>
+                    {todaysNameDays.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {todaysNameDays.map((name, index) => (
+                          <span key={`${name}-${index}`} className="rounded-md bg-[#f0ebf4] px-2.5 py-1.5 text-sm font-semibold text-dark-purple">
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm text-muted">Šodien vārda dienu nav.</p>
+                    )}
+                  </div>
+
+                  <div className="border-t border-[#ece9e5] pt-3">
+                    <h3 className="text-xs font-bold uppercase text-medium-purple">Uzvārda dienas</h3>
+                    {todaysSurnameDays.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {todaysSurnameDays.map((surname, index) => (
+                          <span key={`${surname}-${index}`} className="rounded-md bg-[#f4eee9] px-2.5 py-1.5 text-sm font-semibold text-dark-purple">
+                            {surname}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm text-muted">Šodien uzvārda dienu nav.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
         </div>
       </div>
     </div>

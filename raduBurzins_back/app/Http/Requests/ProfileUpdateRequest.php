@@ -30,7 +30,8 @@ class ProfileUpdateRequest extends FormRequest
                 'max:20',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
-            'date_of_birth' => ['nullable', 'date'],
+            'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
+            'avatar' => ['nullable', 'image', 'max:2048'],
             'email' => [
                 'required',
                 'string',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\SpecialDay;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SpecialDayController extends Controller
 {
@@ -44,7 +45,10 @@ class SpecialDayController extends Controller
             'event_time' => 'nullable|string|max:50',
             'is_public' => 'boolean',
             'shared_with_user_ids' => 'nullable|array',
-            'shared_with_user_ids.*' => 'integer',
+            'shared_with_user_ids.*' => [
+                'integer',
+                Rule::exists('users', 'id')->where('is_approved', true),
+            ],
         ]);
 
         $specialDay = SpecialDay::create([
@@ -75,15 +79,18 @@ class SpecialDayController extends Controller
         $this->authorizeOwnerOrPublic($specialDay, true);
 
         $validated = $request->validate([
-            'title' => 'sometimes|required|string|max:100',
+            'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'date' => 'sometimes|required|date',
             'repeats' => 'boolean',
-            'location' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:255',
             'event_time' => 'nullable|string|max:50',
             'is_public' => 'boolean',
             'shared_with_user_ids' => 'nullable|array',
-            'shared_with_user_ids.*' => 'integer',
+            'shared_with_user_ids.*' => [
+                'integer',
+                Rule::exists('users', 'id')->where('is_approved', true),
+            ],
         ]);
 
         $specialDay->fill([
@@ -135,7 +142,7 @@ class SpecialDayController extends Controller
     }
 
     // citas nepieciešamās funkcijas
-    
+
     private function normalizeEvent(SpecialDay $specialDay): array
     {
         $data = $specialDay->toArray();

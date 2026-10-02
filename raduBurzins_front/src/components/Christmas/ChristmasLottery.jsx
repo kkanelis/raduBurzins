@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useAuth } from '../../context/useAuth';
+import api from '../../services/api';
 
 const ChristmasLottery = () => {
     const { user } = useAuth();
@@ -13,12 +13,7 @@ const ChristmasLottery = () => {
     useEffect(() => {
         const fetchLotteryData = async () => {
             try {
-                const lotteryResponse = await axios.get('http://127.0.0.1:8000/api/christmas-lottery', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Accept': 'application/json'
-                    }
-                });
+                const lotteryResponse = await api.get('/api/christmas-lottery');
 
                 setLotteryData(lotteryResponse.data.assignments);
             } catch (err) {
@@ -40,7 +35,7 @@ const ChristmasLottery = () => {
     const currentYear = new Date().getFullYear();
 
     const currentUserData = lotteryData?.find(data =>
-        data.year === currentYear.toString() &&
+        String(data.year) === String(currentYear) &&
         data.giver.id === user.id
     );
 

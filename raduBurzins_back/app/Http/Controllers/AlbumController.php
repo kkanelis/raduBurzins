@@ -7,6 +7,7 @@ use App\Models\AlbumPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class AlbumController extends Controller
 {
@@ -44,6 +45,10 @@ class AlbumController extends Controller
             'emoji' => 'nullable|string|max:10',
             'is_public' => 'boolean',
             'shared_with_user_ids' => 'nullable|array',
+            'shared_with_user_ids.*' => [
+                'integer',
+                Rule::exists('users', 'id')->where('is_approved', true),
+            ],
             'photos' => 'nullable|array',
             'photos.*.title' => 'nullable|string|max:100',
             'photos.*.note' => 'nullable|string|max:255',
@@ -86,11 +91,15 @@ class AlbumController extends Controller
 
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:100',
-            'description' => 'nullable|string',
-            'category' => 'nullable|string|max:50',
+            'description' => 'nullable|string|max:255',
+            'category' => 'nullable|string|max:100',
             'emoji' => 'nullable|string|max:10',
             'is_public' => 'boolean',
             'shared_with_user_ids' => 'nullable|array',
+            'shared_with_user_ids.*' => [
+                'integer',
+                Rule::exists('users', 'id')->where('is_approved', true),
+            ],
         ]);
 
         if (array_key_exists('shared_with_user_ids', $validated)) {

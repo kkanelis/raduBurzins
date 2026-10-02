@@ -25,9 +25,9 @@ class RegisteredUserController extends Controller
             'phone' => 'required|string|max:12|unique:users,phone',
             'email' => 'required|string|lowercase|email|max:255|unique:users,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'terms' => 'required|boolean',
-            'rules' => 'required|boolean',
-            'date_of_birth' => 'nullable|date',
+            'terms' => 'accepted',
+            'rules' => 'accepted',
+            'date_of_birth' => 'nullable|date|before_or_equal:today',
         ]);
 
         $user = User::create([

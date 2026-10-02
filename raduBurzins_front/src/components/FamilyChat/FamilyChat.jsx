@@ -35,6 +35,7 @@ function FamilyChat() {
   const [photoDataUrl, setPhotoDataUrl] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
 
   const clearPhoto = () => {
     setSelectedPhotoName("");
@@ -46,6 +47,7 @@ function FamilyChat() {
   const handlePhotoChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setSendError("");
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -67,6 +69,7 @@ function FamilyChat() {
 
     const text = draft.trim();
     if (!text && !photoDataUrl) return;
+    setSendError("");
 
     const hasPhoto = Boolean(photoFile);
     const pendingId = `pending-${Date.now()}`;
@@ -121,10 +124,24 @@ function FamilyChat() {
       }
     } catch (submissionError) {
       console.error("error:", submissionError);
-      queryClient.setQueryData(["chat-messages"], (current = []) => current.filter((message) => (
-        String(message.id) !== String(pendingId)
-        && String(message.clientMessageId) !== String(pendingId)
-      )));
+      const currentMessages = queryClient.getQueryData(["chat-messages"]) || [];
+      const messageWasBroadcast = currentMessages.some((message) => (
+        String(message.clientMessageId) === String(pendingId)
+        && String(message.id) !== String(pendingId)
+      ));
+      queryClient.setQueryData(["chat-messages"], (current = []) => current.filter(
+        (message) => String(message.id) !== String(pendingId)
+      ));
+      if (!messageWasBroadcast) {
+        setDraft(text);
+        if (hasPhoto) {
+          setSelectedPhotoName(selectedPhotoName);
+          setPhotoDataUrl(photoDataUrl);
+          setPhotoFile(photoFile);
+        }
+        setSendError(submissionError.response?.data?.message || "Ziņu neizdevās nosūtīt. Mēģini vēlreiz.");
+      }
+      queryClient.invalidateQueries({ queryKey: ["chat-messages"] });
     } finally {
       setSending(false);
     }
@@ -250,6 +267,11 @@ function FamilyChat() {
           </div>
 
           <form onSubmit={handleSubmit} className="border-t border-[#e8ece6] bg-white p-3 sm:p-4">
+            {sendError && (
+              <div role="alert" className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {sendError}
+              </div>
+            )}
             {photoDataUrl && (
               <div className="mb-3 flex items-center gap-3 rounded-lg border border-[#e1e9e0] bg-[#f7f9f6] p-2">
                 <img src={photoDataUrl} alt="Priekšskatījums" className="h-12 w-12 shrink-0 rounded-md object-cover" />
@@ -279,7 +301,10 @@ function FamilyChat() {
 
               <textarea
                 value={draft}
-                onChange={(event) => setDraft(event.target.value)}
+                onChange={(event) => {
+                  setDraft(event.target.value);
+                  if (sendError) setSendError("");
+                }}
                 placeholder="Raksti ziņu visai ģimenei..."
                 aria-label="Ziņas teksts"
                 rows={1}

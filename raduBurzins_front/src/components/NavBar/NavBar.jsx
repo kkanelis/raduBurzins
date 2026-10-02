@@ -33,7 +33,7 @@ function NavBar() {
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-medium-purple/40 to-transparent lg:inset-y-0 lg:right-0 lg:left-auto lg:h-auto lg:w-px lg:bg-gradient-to-b" />
       <div className="section-shell lg:flex lg:h-full lg:flex-col lg:px-5">
         <div className="flex items-center justify-between gap-3 py-3 sm:py-4 lg:block lg:py-7">
-          <Link to="/RegWelcome" className="group flex items-center gap-3 rounded-3xl border border-white/80 bg-white/75 p-3 shadow-sm no-underline transition hover:shadow-md">
+          <Link to="/RegWelcome" className="group flex items-center gap-3 rounded-lg border border-white/80 bg-white/75 p-2.5 no-underline transition hover:shadow-md sm:p-3">
             <div className="relative">
               <div className="absolute -inset-1 rounded-2xl opacity-60 blur-sm transition" />
               <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-dark-purple via-medium-purple to-[#8a6cff] text-off-white font-black shadow-lg">
@@ -41,7 +41,7 @@ function NavBar() {
               </div>
             </div>
             <div className="hidden sm:block">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-medium-purple mb-0.5">
+              <p className="mb-0.5 text-sm font-black uppercase text-medium-purple">
                 Radu Burziņš
               </p>
               <p className="text-xs font-medium text-muted">Kalendārs • Notikumi • Ģimene</p>
@@ -49,13 +49,13 @@ function NavBar() {
           </Link>
 
           <div className="hidden lg:block lg:pt-8">
-            <div className="mb-3 px-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#a18f86]">Navigācija</div>
+            <div className="mb-3 px-2 text-[10px] font-bold uppercase text-[#a18f86]">Navigācija</div>
             <div className="grid gap-2">
             {navLinks.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
-                className={({ isActive }) => `group flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-extrabold no-underline transition-all duration-200 ${isActive ? "border-[#d8c8e8] bg-[#eee7f5] text-[#382d5b] shadow-sm" : "border-transparent bg-transparent text-dark-purple hover:translate-x-1 hover:border-white/80 hover:bg-white/80 hover:shadow-sm"}`}
+                className={({ isActive }) => `group flex items-center gap-3 rounded-lg border px-3.5 py-3 text-sm font-bold no-underline transition-all duration-200 ${isActive ? "border-[#d8c8e8] bg-[#eee7f5] text-[#382d5b] shadow-sm" : "border-transparent bg-transparent text-dark-purple hover:translate-x-1 hover:border-white/80 hover:bg-white/80 hover:shadow-sm"}`}
               >
                 <span className="text-base transition-transform duration-200 group-hover:scale-110">{link.icon}</span>
                 <span>{link.label}</span>
@@ -65,28 +65,28 @@ function NavBar() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 lg:mt-auto">
-            <div className="hidden sm:flex items-center gap-2 lg:mb-6 lg:flex-col lg:items-stretch lg:rounded-3xl lg:border lg:border-white/90 lg:bg-white/75 lg:p-3 lg:shadow-sm">
+            <div className="hidden items-center gap-2 sm:flex lg:mb-6 lg:flex-col lg:items-stretch lg:rounded-lg lg:border lg:border-white/90 lg:bg-white/75 lg:p-3">
               {user ? (
                 <>
-                  <Link to="/profile" className="hidden items-center gap-3 rounded-2xl bg-[#f4eee9] px-3 py-3 text-left no-underline transition hover:bg-[#eee7f5] lg:flex">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-dark-purple to-medium-purple text-sm font-black text-white shadow-sm">
+                  <Link to="/profile" className="hidden items-center gap-3 rounded-lg bg-[#f4eee9] px-3 py-3 text-left no-underline transition hover:bg-[#eee7f5] lg:flex">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-dark-purple to-medium-purple text-sm font-black text-white">
                       {user.avatar_path ? (
                         <img
                           src={`${api.defaults.baseURL}/storage/${user.avatar_path}`}
                           alt={`${user.first_name} ${user.last_name}`}
-                          className="h-full w-full rounded-xl object-cover"
+                          className="h-full w-full object-cover"
                         />
                       ) : (
                         userInitials
                       )}
                     </div>
                     <div className="min-w-0">
-                      <div className="truncate text-xs font-bold text-[#382d5b]">{user.first_name} {user.last_name}</div>
+                      <div className="truncate text-xs font-bold text-dark-purple">{user.first_name} {user.last_name}</div>
                     </div>
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="rounded-2xl bg-gradient-to-r from-medium-purple to-[#8a6cff] px-4 py-3 text-sm font-bold text-off-white shadow-md transition hover:translate-x-1 hover:shadow-lg lg:w-full"
+                    className="rounded-lg bg-gradient-to-r from-medium-purple to-[#8a6cff] px-4 py-3 text-sm font-bold text-off-white shadow-md transition hover:translate-x-1 hover:shadow-lg lg:w-full"
                   >
                     Izrakstīties
                   </button>
@@ -111,25 +111,26 @@ function NavBar() {
 
             <button
               onClick={() => setShowMobileMenu((value) => !value)}
-              className="sm:hidden inline-flex items-center justify-center rounded-full border border-white/80 bg-white/90 px-4 py-3 text-sm font-black text-dark-purple shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-              aria-label="Atvērt izvēlni"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/80 bg-white/90 text-lg font-bold text-dark-purple shadow-sm transition hover:-translate-y-0.5 hover:shadow-md lg:hidden"
+              aria-label={showMobileMenu ? "Aizvērt izvēlni" : "Atvērt izvēlni"}
               aria-expanded={showMobileMenu}
+              aria-controls="mobile-navigation"
             >
-              ☰
+              {showMobileMenu ? "×" : "☰"}
             </button>
           </div>
         </div>
 
         {showMobileMenu && (
-          <div className="sm:hidden pb-4">
-            <div className="rounded-[1.75rem] border border-white/80 bg-white/92 p-3 shadow-[0_18px_40px_rgba(36,23,38,0.12)]">
+          <div id="mobile-navigation" className="pb-4 lg:hidden">
+            <div className="rounded-lg border border-white/80 bg-white/92 p-3 shadow-[0_18px_40px_rgba(36,23,38,0.12)]">
               <div className="grid gap-2">
                 {navLinks.map((link) => (
                   <NavLink
                     key={link.to}
                     to={link.to}
                     onClick={closeMenu}
-                    className={({ isActive }) => `flex items-center gap-3 rounded-2xl border px-4 py-3 font-semibold no-underline transition ${isActive ? "border-[#d8c8e8] bg-[#eee7f5] text-[#382d5b]" : "border-white/80 bg-white text-dark-purple hover:bg-warm-beige/40"}`}
+                    className={({ isActive }) => `flex items-center gap-3 rounded-lg border px-3.5 py-3 font-semibold no-underline transition ${isActive ? "border-[#d8c8e8] bg-[#eee7f5] text-[#382d5b]" : "border-white/80 bg-white text-dark-purple hover:bg-warm-beige/40"}`}
                   >
                     <span className="text-lg">{link.icon}</span>
                     <span>{link.label}</span>
@@ -145,14 +146,14 @@ function NavBar() {
                     <Link
                       to="/profile"
                       onClick={closeMenu}
-                      className="flex items-center gap-3 rounded-2xl border border-white/80 bg-white px-4 py-3 font-semibold text-dark-purple no-underline transition hover:bg-warm-beige/40"
+                      className="flex items-center gap-3 rounded-lg border border-white/80 bg-white px-3.5 py-3 font-semibold text-dark-purple no-underline transition hover:bg-warm-beige/40"
                     >
                       <span className="text-lg">👤</span>
                       <span>Profils</span>
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="rounded-2xl bg-gradient-to-r from-medium-purple to-[#8a6cff] px-4 py-3 font-bold text-off-white shadow-md transition hover:shadow-lg"
+                      className="rounded-lg bg-gradient-to-r from-medium-purple to-[#8a6cff] px-4 py-3 text-left font-bold text-off-white shadow-md transition hover:shadow-lg"
                     >
                       Izrakstīties
                     </button>
@@ -162,7 +163,7 @@ function NavBar() {
                     <Link
                       to="/login"
                       onClick={closeMenu}
-                      className="flex items-center gap-3 rounded-2xl border border-white/80 bg-white px-4 py-3 font-semibold text-dark-purple no-underline transition hover:bg-warm-beige/40"
+                      className="flex items-center gap-3 rounded-lg border border-white/80 bg-white px-3.5 py-3 font-semibold text-dark-purple no-underline transition hover:bg-warm-beige/40"
                     >
                       <span className="text-lg">🔑</span>
                       <span>Pieslēgties</span>
@@ -170,7 +171,7 @@ function NavBar() {
                     <Link
                       to="/register"
                       onClick={closeMenu}
-                      className="rounded-2xl bg-gradient-to-r from-medium-purple to-[#8a6cff] px-4 py-3 font-bold text-off-white text-center shadow-md transition hover:shadow-lg no-underline"
+                      className="rounded-lg bg-gradient-to-r from-medium-purple to-[#8a6cff] px-4 py-3 text-center font-bold text-off-white shadow-md transition hover:shadow-lg no-underline"
                     >
                       Reģistrēties
                     </Link>

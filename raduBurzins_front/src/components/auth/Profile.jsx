@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/useAuth';
 import api from '../../services/api';
 
@@ -15,6 +15,7 @@ function Profile() {
     email: user?.email || '',
   });
   const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -26,12 +27,18 @@ function Profile() {
     return date.toISOString().split('T')[0];
   };
 
-  const avatarPreview = useMemo(() => {
-    if (avatarFile) return URL.createObjectURL(avatarFile);
-    if (user?.avatar_path) {
-      return `${api.defaults.baseURL}/storage/${user.avatar_path}?t=${user.updated_at || Date.now()}`;
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview(user?.avatar_path
+        ? `${api.defaults.baseURL}/storage/${user.avatar_path}?t=${user.updated_at || Date.now()}`
+        : '');
+      return undefined;
     }
-    return '';
+
+    const previewUrl = URL.createObjectURL(avatarFile);
+    setAvatarPreview(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
   }, [avatarFile, user?.avatar_path, user?.updated_at]);
 
   if (!user) return <div className="py-8 text-center">Nav lietotāja datu.</div>;
@@ -57,11 +64,12 @@ function Profile() {
       Object.entries(formData).forEach(([key, value]) => {
         payload.append(key, value ?? '');
       });
+      payload.append('_method', 'PUT');
       if (avatarFile) {
         payload.append('avatar', avatarFile);
       }
 
-      const response = await api.post('/api/profile/avatar', payload, {
+      const response = await api.post('/api/profile', payload, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

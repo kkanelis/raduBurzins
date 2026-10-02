@@ -19,8 +19,9 @@ class UserStatusController extends Controller
 
     public function getUsers()
     {
-        $users = User::All();
-
-        return $users;
+        return User::query()
+            ->where('is_approved', true)
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name']);
     }
 }

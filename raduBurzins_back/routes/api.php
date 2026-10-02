@@ -10,12 +10,13 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SpecialDayController;
 use App\Http\Controllers\SurnamedaysController;
 use App\Http\Controllers\UserStatusController;
+use App\Http\Middleware\EnsureUserIsApproved;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisteredUserController::class, 'store']);
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', EnsureUserIsApproved::class])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });

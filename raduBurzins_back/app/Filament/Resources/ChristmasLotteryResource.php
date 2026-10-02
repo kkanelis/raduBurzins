@@ -28,13 +28,15 @@ class ChristmasLotteryResource extends Resource
                         date('Y') => date('Y'),
                         date('Y') + 1 => date('Y') + 1,
                     ])
-                    ->required(),
+                    ->required()
+                    ->rules(['integer']),
                 Forms\Components\Select::make('participants')
                     ->multiple()
                     ->options(fn () => User::where('is_approved', true)
                         ->get()
                         ->mapWithKeys(fn ($user) => [$user->id => $user->full_name]))
                     ->required()
+                    ->rules(['array', 'min:2'])
                     ->label('Select Participants'),
             ]);
     }
