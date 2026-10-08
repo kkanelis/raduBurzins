@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SpecialDay;
+use App\Support\SharedUserIdList;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,21 +15,13 @@ class SpecialDayController extends Controller
         $userId = $request->user()?->getKey();
 
         $events = SpecialDay::query()
+            ->where(function ($query) use ($userId) {
+                $query->where('is_public', true)
+                    ->orWhere('user_id', $userId)
+                    ->orWhereJsonContains('shared_with_user_ids', (int) $userId);
+            })
             ->latest()
             ->get()
-            ->filter(function (SpecialDay $specialDay) use ($userId) {
-
-                if ($specialDay->is_public) {
-                    return true;
-                }
-
-                if ((int) $specialDay->user_id === (int) $userId) {
-                    return true;
-                }
-
-                return in_array((int) $userId, $this->sharedUserIds($specialDay), true);
-            })
-            ->values()
             ->map(fn (SpecialDay $specialDay) => $this->normalizeEvent($specialDay));
 
         return response()->json($events);
@@ -42,7 +35,7 @@ class SpecialDayController extends Controller
             'date' => 'required|date',
             'repeats' => 'boolean',
             'location' => 'nullable|string|max:255',
-            'event_time' => 'nullable|string|max:50',
+            'event_time' => 'nullable|date_format:H:i',
             'is_public' => 'boolean',
             'shared_with_user_ids' => 'nullable|array',
             'shared_with_user_ids.*' => [
@@ -84,7 +77,7 @@ class SpecialDayController extends Controller
             'date' => 'sometimes|required|date',
             'repeats' => 'boolean',
             'location' => 'nullable|string|max:255',
-            'event_time' => 'nullable|string|max:50',
+            'event_time' => 'sometimes|nullable|date_format:H:i',
             'is_public' => 'boolean',
             'shared_with_user_ids' => 'nullable|array',
             'shared_with_user_ids.*' => [
@@ -146,26 +139,9 @@ class SpecialDayController extends Controller
     private function normalizeEvent(SpecialDay $specialDay): array
     {
         $data = $specialDay->toArray();
-        $data['shared_with_user_ids'] = $this->sharedUserIds($specialDay);
+        $data['shared_with_user_ids'] = SharedUserIdList::normalize($specialDay->shared_with_user_ids);
 
         return $data;
-    }
-
-    private function sharedUserIds(SpecialDay $specialDay): array
-    {
-        $value = $specialDay->shared_with_user_ids ?? [];
-
-        if (is_string($value)) {
-            $decoded = json_decode($value, true);
-
-            return is_array($decoded) ? array_values(array_map('intval', $decoded)) : [];
-        }
-
-        if (is_array($value)) {
-            return array_values(array_map('intval', $value));
-        }
-
-        return [];
     }
 
     private function authorizeOwnerOrPublic(SpecialDay $specialDay, bool $ownerOnly = false): void
@@ -176,7 +152,7 @@ class SpecialDayController extends Controller
             abort(403);
         }
 
-        if (! $ownerOnly && ! $specialDay->is_public && (int) $specialDay->user_id !== (int) $currentUserId && ! in_array((int) $currentUserId, $this->sharedUserIds($specialDay), true)) {
+        if (! $ownerOnly && ! $specialDay->is_public && (int) $specialDay->user_id !== (int) $currentUserId && ! in_array((int) $currentUserId, SharedUserIdList::normalize($specialDay->shared_with_user_ids), true)) {
             abort(403);
         }
     }

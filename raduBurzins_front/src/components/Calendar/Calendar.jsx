@@ -1,9 +1,18 @@
 import React, { useMemo, useState } from 'react';
 
 import api from '../../services/api';
-import BasePopup from '../BasePopoup';
+import CalendarDayDetails from './CalendarDayDetails';
 import CreateSpecialDay from './CreateSpecialDay';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  extractMonthDayKey,
+  formatDateKey,
+  formatMonthDayKey,
+  getMonthMatrix,
+  normalizeItems,
+  resolveItems,
+  uniqueById,
+} from './calendarUtils';
 
 const MONTH_NAMES = [
   'janvāris',
@@ -21,90 +30,6 @@ const MONTH_NAMES = [
 ];
 
 const WEEKDAY_LABELS = ['Pr', 'Ot', 'Tr', 'Ce', 'Pk', 'Se', 'Sv'];
-
-// Kalendāra palīgfunkcijas
-
-function formatDateKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function formatMonthDayKey(date) {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${month}-${day}`;
-}
-
-function extractMonthDayKey(dateValue) {
-  const rawDate = String(dateValue || '');
-  if (rawDate.length >= 10) {
-    return rawDate.slice(5, 10);
-  }
-  return rawDate;
-}
-
-function formatDisplayDate(dateValue) {
-  const date = new Date(dateValue);
-  return date.toLocaleDateString('lv-LV', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
-function getMonthMatrix(year, monthIndex) {
-  const firstDay = new Date(year, monthIndex, 1);
-  const lastDay = new Date(year, monthIndex + 1, 0);
-  const startDay = (firstDay.getDay() + 6) % 7;
-  const daysInMonth = lastDay.getDate();
-  const cells = [];
-
-  for (let i = 0; i < startDay; i += 1) {
-    cells.push(null);
-  }
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    cells.push(new Date(year, monthIndex, day));
-  }
-
-  while (cells.length % 7 !== 0) {
-    cells.push(null);
-  }
-
-  return cells;
-}
-
-function normalizeItems(responseData, propertyName) {
-  const mapped = {};
-
-  responseData.forEach((item) => {
-    const rawDate = String(item.date || '');
-    const fullKey = rawDate.slice(0, 10);
-    const monthDayKey = extractMonthDayKey(rawDate);
-    const values = Array.isArray(item[propertyName]) ? item[propertyName] : [];
-
-    if (!mapped[fullKey]) mapped[fullKey] = values;
-    if (!mapped[monthDayKey]) mapped[monthDayKey] = values;
-  });
-
-  return mapped;
-}
-
-function resolveItems(dataMap, date) {
-  const fullKey = formatDateKey(date);
-  const monthDayKey = formatMonthDayKey(date);
-  return dataMap[fullKey] || dataMap[monthDayKey] || [];
-}
-
-function uniqueById(items) {
-  return Array.from(new Map(items.map((item) => [item.id, item])).values());
-}
-
-function uniqueLabels(items, labelGetter) {
-  return Array.from(new Map(items.map((item) => [labelGetter(item), item])).values());
-}
 
 function Calendar() {
   const queryClient = useQueryClient();
@@ -251,16 +176,6 @@ function Calendar() {
   };
 
   const monthLabel = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
-  const dayNames = selectedDay?.names || [];
-  const daySurnames = selectedDay?.surnames || [];
-  const dayBirthdays = selectedDay?.birthdays || [];
-  const daySpecials = selectedDay?.specials || [];
-
-  const uniqueDayNames = uniqueLabels(dayNames, (name) => name);
-  const uniqueDayBirthdays = uniqueById(dayBirthdays);
-  const uniqueDaySurnames = uniqueLabels(daySurnames, (name) => name);
-  const hasDaySpecials = daySpecials.length > 0;
-
   return (
     <div className="relative overflow-hidden">
       <div className="absolute inset-0 hero-grid opacity-50 pointer-events-none" />
@@ -438,107 +353,7 @@ function Calendar() {
         />
       )}
 
-      {selectedDay && (
-        <BasePopup title={formatDisplayDate(selectedDay.date)} onClose={closeDayPopup} width="720px">
-          <div className="space-y-3 sm:space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <section className="min-w-0 rounded-lg border border-[#d8e0fb] bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-[#5372c9]" />
-                  <h4 className="text-xs font-bold uppercase text-muted">Vārda dienas</h4>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {uniqueDayNames.length > 0 ? (
-                    uniqueDayNames.map((name, index) => (
-                      <span key={`${name}-${index}`} className="rounded-md bg-[#f0f3ff] px-2.5 py-1.5 text-sm font-semibold text-dark-purple">
-                        {name}
-                      </span>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted">Nav vārda dienu.</div>
-                  )}
-                </div>
-              </section>
-              {uniqueDayBirthdays.length > 0 && (
-                <section className="min-w-0 rounded-lg border border-[#cfe0d0] bg-white p-4 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-[#54805a]" />
-                    <h4 className="text-xs font-bold uppercase text-muted">Dzimšanas dienas</h4>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {uniqueDayBirthdays.map((user) => (
-                      <span key={user.id} className="rounded-md bg-[#f1f7f0] px-2.5 py-1.5 text-sm font-semibold text-dark-purple">
-                        {user.first_name} {user.last_name}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <section className="min-w-0 rounded-lg border border-[#efdfc0] bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-[#b77a23]" />
-                  <h4 className="text-xs font-bold uppercase text-muted">Uzvārda dienas</h4>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {uniqueDaySurnames.length > 0 ? (
-                    uniqueDaySurnames.map((name, index) => (
-                      <span key={`${name}-${index}`} className="rounded-md bg-[#fff7e9] px-2.5 py-1.5 text-sm font-semibold text-dark-purple">
-                        {name}
-                      </span>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted">Nav uzvārda dienu.</div>
-                  )}
-                </div>
-              </section>
-
-              {hasDaySpecials && (
-                <section className="min-w-0 rounded-lg border border-[#efcfbd] bg-[#fffaf7] p-4 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-[#df8058]" />
-                    <h4 className="text-xs font-bold uppercase text-muted">Pasākumi</h4>
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {daySpecials.map((event) => {
-                      const repeatsYearly = Boolean(event.repeats);
-                      const displayDate = repeatsYearly ? selectedDay.date : event.date;
-                      return (
-                        <article key={event.id} className="rounded-md border border-[#f0ddcf] bg-white p-3 shadow-sm">
-                          <h5 className="break-words text-sm font-extrabold text-dark-purple">{event.title}</h5>
-                          {event.description && (
-                            <p className="mt-1.5 break-words text-sm leading-5 text-muted">{event.description}</p>
-                          )}
-                          <dl className="mt-3 grid grid-cols-2 gap-2">
-                            <div className="min-w-0 rounded-md bg-[#fff3ed] px-2.5 py-2">
-                              <dt className="text-[10px] font-bold uppercase text-muted">Datums</dt>
-                              <dd className="mt-0.5 break-words text-xs font-semibold text-dark-purple">{formatDisplayDate(displayDate)}</dd>
-                            </div>
-                            {event.event_time && (
-                              <div className="min-w-0 rounded-md bg-[#fff3ed] px-2.5 py-2">
-                                <dt className="text-[10px] font-bold uppercase text-muted">Laiks</dt>
-                                <dd className="mt-0.5 break-words text-xs font-semibold text-dark-purple">{event.event_time}</dd>
-                              </div>
-                            )}
-                            {event.location && (
-                              <div className="col-span-2 min-w-0 rounded-md bg-[#fff3ed] px-2.5 py-2">
-                                <dt className="text-[10px] font-bold uppercase text-muted">Vieta</dt>
-                                <dd className="mt-0.5 break-words text-xs font-semibold text-dark-purple">{event.location}</dd>
-                              </div>
-                            )}
-                          </dl>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-            </div>
-          </div>
-        </BasePopup>
-      )}
+      {selectedDay && <CalendarDayDetails day={selectedDay} onClose={closeDayPopup} />}
     </div>
   );
 }

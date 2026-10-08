@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import TermsPopup from './TermsPopup';
 import RulesPopup from './RulesPopup';
@@ -18,9 +18,9 @@ function Register() {
         rules: false,
     });
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [showTerms, setShowTerms] = useState(false);
     const [showRules, setShowRules] = useState(false);
-    const navigate = useNavigate();
     const { register } = useAuth();
 
     const [dob, setDob] = useState({ day: '', month: '', year: '' });
@@ -57,8 +57,9 @@ function Register() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await register(formData);
-            navigate('/RegWelcome');
+            const response = await register(formData);
+            setError('');
+            setSuccessMessage(response.data?.message || 'Reģistrācija veiksmīga! Tavs konts nosūtīts apstiprināšanai.');
         } catch (err) {
             setError(err.response?.data?.message || 'Reģistrācijas kļūda. Lūdzu, mēģiniet vēlreiz.');
         }
@@ -75,6 +76,14 @@ function Register() {
                     <div className="p-3 mb-4 bg-red-50 text-red-700 rounded">❌ {error}</div>
                 )}
 
+                {successMessage ? (
+                    <div role="status" className="space-y-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+                        <p>{successMessage}</p>
+                        <Link to="/login" className="btn-primary inline-flex px-5 py-2">
+                            Pieslēgties
+                        </Link>
+                    </div>
+                ) : (
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="col-span-1">
                         <label className="block text-sm font-medium text-muted mb-1">Vārds *</label>
@@ -144,8 +153,11 @@ function Register() {
                         <button type="submit" className="btn-primary w-full">✨ Reģistrēties</button>
                     </div>
                 </form>
+                )}
 
-                <p className="mt-4 text-center text-sm">Jau esat reģistrējies? <a href="/login" className="text-accent-2">Pieslēdzieties</a></p>
+                {!successMessage && (
+                    <p className="mt-4 text-center text-sm">Jau esat reģistrējies? <Link to="/login" className="text-accent-2">Pieslēdzieties</Link></p>
+                )}
             </div>
 
             {showTerms && <TermsPopup onClose={() => setShowTerms(false)} />}

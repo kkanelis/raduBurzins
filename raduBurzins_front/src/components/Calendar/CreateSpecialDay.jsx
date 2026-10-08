@@ -118,10 +118,9 @@ function CreateSpecialDay({ onClose, onSuccess }) {
           <div>
             <label className="mb-1 block text-sm font-medium text-muted">Laiks</label>
             <input
-              type="text"
+              type="time"
               value={formData.event_time}
               onChange={(e) => setFormData({ ...formData, event_time: e.target.value })}
-              placeholder="Piemēram: 18:30"
               className="w-full rounded-md border border-black/30 bg-white/80 px-3 py-2"
             />
           </div>

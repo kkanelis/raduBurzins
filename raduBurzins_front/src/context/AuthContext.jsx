@@ -20,6 +20,13 @@ export const AuthProvider = ({ children }) => {
         checkAuth();
     }, []);
 
+    useEffect(() => {
+        const handleUnauthorized = () => setUser(null);
+        window.addEventListener('auth:unauthorized', handleUnauthorized);
+
+        return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    }, []);
+
     const checkAuth = async () => {
         const token = localStorage.getItem('token');
 
@@ -58,21 +65,18 @@ export const AuthProvider = ({ children }) => {
     };
 
     const register = async (userData) => {
-        const response = await api.post('/api/register', userData);
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        setUser(response.data.user);
-        return response;
+        return api.post('/api/register', userData);
     };
 
     const logout = async () => {
         try {
             await api.post('/api/logout');
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             setUser(null);
-        } catch (error) {
-            console.error('Logout error:', error);
         }
     };
 

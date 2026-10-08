@@ -46,6 +46,7 @@ class UserResource extends Resource
                     ->required(),
                 Forms\Components\Toggle::make('is_approved')
                     ->label('Vai ir apstiprināts?')
+                    ->disabled(fn (?User $record): bool => $record !== null && (int) $record->getKey() === (int) auth()->id())
                     ->required(),
             ]);
     }
@@ -75,7 +76,8 @@ class UserResource extends Resource
                     ->label('E-pasts')
                     ->searchable(),
                 ToggleColumn::make('is_approved')
-                    ->label('Apstiprināts'),
+                    ->label('Apstiprināts')
+                    ->disabled(fn (User $record): bool => (int) $record->getKey() === (int) auth()->id()),
                 TextColumn::make('created_at')
                     ->label('Profils izveidots')
                     ->dateTime(),
@@ -87,9 +89,7 @@ class UserResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
-            ]);
+            ->bulkActions([]);
     }
 
     public static function getRelations(): array
@@ -101,7 +101,6 @@ class UserResource extends Resource
     {
         return [
             'index' => Pages\ListUsers::route('/'),
-            'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Album;
 use App\Models\AlbumPhoto;
+use App\Support\SharedUserIdList;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -283,7 +284,7 @@ class AlbumController extends Controller
             abort(403);
         }
 
-        if (! $ownerOnly && ! $album->is_public && (int) $album->user_id !== (int) $currentUserId && ! in_array((int) $currentUserId, $this->sharedUserIds($album), true)) {
+        if (! $ownerOnly && ! $album->is_public && (int) $album->user_id !== (int) $currentUserId && ! in_array((int) $currentUserId, SharedUserIdList::normalize($album->shared_with_user_ids), true)) {
             abort(403);
         }
     }
@@ -293,23 +294,6 @@ class AlbumController extends Controller
         if ((int) $photo->album_id !== (int) $album->id) {
             abort(404);
         }
-    }
-
-    private function sharedUserIds(Album $album): array
-    {
-        $value = $album->shared_with_user_ids ?? [];
-
-        if (is_string($value)) {
-            $decoded = json_decode($value, true);
-
-            return is_array($decoded) ? array_values(array_map('intval', $decoded)) : [];
-        }
-
-        if (is_array($value)) {
-            return array_values(array_map('intval', $value));
-        }
-
-        return [];
     }
 
     public function normalizeAlbum(Album $album): array
@@ -323,7 +307,7 @@ class AlbumController extends Controller
             'emoji' => $album->emoji,
             'user_id' => $album->user_id,
             'is_public' => (bool) $album->is_public,
-            'shared_with_user_ids' => $this->sharedUserIds($album),
+            'shared_with_user_ids' => SharedUserIdList::normalize($album->shared_with_user_ids),
             'created_at' => $album->created_at?->toDateTimeString(),
             'updated_at' => $album->updated_at?->toDateTimeString(),
             'photos' => $album->photos

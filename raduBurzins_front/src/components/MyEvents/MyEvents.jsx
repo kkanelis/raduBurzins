@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import api from '../../services/api';
-import BasePopup from '../../components/BasePopoup';
 import CreateSpecialDay from '../../components/Calendar/CreateSpecialDay';
+import MyEventEditor from './MyEventEditor';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 function MyEvents() {
@@ -20,7 +20,7 @@ function MyEvents() {
     queryKey: ["users-status"],
     queryFn: async () => {
       const response = await api.get("/api/users/status");
-      return response.data;
+      return Array.isArray(response.data?.users) ? response.data.users : [];
     },
   });
 
@@ -38,8 +38,6 @@ function MyEvents() {
     is_public: true,
     shared_user_ids: [],
   });
-  const [imageFile, setImageFile] = useState(null);
-  const [removeImage, setRemoveImage] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const loading = eventsLoading || usersLoading;
@@ -72,8 +70,6 @@ function MyEvents() {
       is_public: Boolean(event.is_public),
       shared_user_ids: Array.isArray(event.shared_with_user_ids) ? event.shared_with_user_ids : [],
     });
-    setImageFile(null);
-    setRemoveImage(false);
     setLocalError('');
   };
 
@@ -91,8 +87,6 @@ function MyEvents() {
 
   const closeEditor = () => {
     setSelectedEvent(null);
-    setImageFile(null);
-    setRemoveImage(false);
     setLocalError('');
   };
 
@@ -115,11 +109,8 @@ function MyEvents() {
       payload.append('event_time', formData.event_time || '');
       payload.append('is_public', formData.is_public ? '1' : '0');
       formData.shared_user_ids.forEach((userId) => {
-        payload.append('shared_user_ids[]', userId);
+        payload.append('shared_with_user_ids[]', userId);
       });
-      if (imageFile) payload.append('image', imageFile);
-      if (removeImage) payload.append('remove_image', '1');
-
       await api.post(`/api/special-days/${selectedEvent.id}`, payload, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -261,158 +252,18 @@ function MyEvents() {
       )}
 
       {selectedEvent && (
-        <BasePopup title={selectedEvent.title} onClose={closeEditor} width="760px">
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="rounded-lg border border-[#e5e8e1] bg-white p-4 shadow-sm sm:p-5">
-              <h3 className="text-sm font-extrabold text-dark-purple">Notikuma informācija</h3>
-
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-muted">Nosaukums</label>
-                  <input
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-muted">Datums</label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <label className="mb-1 block text-sm font-medium text-muted">Apraksts</label>
-                <textarea
-                  rows="4"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"
-                />
-              </div>
-
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-muted">Atrašanās vieta</label>
-                  <input
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"
-                    placeholder="Piemēram: Mājas, Rīga"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-muted">Laiks</label>
-                  <input
-                    value={formData.event_time}
-                    onChange={(e) => setFormData({ ...formData, event_time: e.target.value })}
-                    className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"
-                    placeholder="Piemēram: 18:30"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <label className="flex items-center gap-3 rounded-lg border border-[#e5e8e1] bg-[#fcfcfa] px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={formData.repeats}
-                    onChange={(e) => setFormData({ ...formData, repeats: e.target.checked })}
-                  />
-                  <span className="text-sm font-medium text-dark-purple">Atkārtojas katru gadu</span>
-                </label>
-
-                <label className="flex items-center gap-3 rounded-lg border border-[#e5e8e1] bg-[#fcfcfa] px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={!formData.is_public}
-                    onChange={(e) => {
-                      const isPrivate = e.target.checked;
-                      setFormData({
-                        ...formData,
-                        is_public: !isPrivate,
-                        shared_user_ids: isPrivate ? formData.shared_user_ids : [],
-                      });
-                    }}
-                  />
-                  <span className="text-sm font-medium text-dark-purple">Privāts pasākums</span>
-                </label>
-              </div>
-            </div>
-
-            {!formData.is_public && (
-              <div className="rounded-lg border border-[#e5e8e1] bg-white p-4 shadow-sm">
-                <div className="mb-3">
-                  <h3 className="text-sm font-bold text-dark-purple">Kas var redzēt šo notikumu?</h3>
-                  <p className="mt-1 text-xs text-muted">
-                    Izvēlies konkrētus lietotājus. Notikums būs redzams tev un izvēlētajiem cilvēkiem.
-                  </p>
-                </div>
-
-                {usersLoading ? (
-                  <div className="text-sm text-muted">Ielādē lietotājus...</div>
-                ) : users && users.length > 0 ? (
-                  <div className="grid max-h-60 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                    {users.map((user) => {
-                      const checked = formData.shared_user_ids.includes(user.id);
-                      return (
-                        <button
-                          key={user.id}
-                          type="button"
-                          onClick={() => toggleSharedUser(user.id)}
-                          className={`flex items-center justify-between rounded-lg border px-3 py-3 text-left transition ${
-                            checked
-                              ? 'border-[#718b74] bg-[#edf3ed]'
-                              : 'border-[#e5e8e1] bg-white hover:bg-[#f7f9f6]'
-                          }`}
-                        >
-                          <div>
-                            <div className="text-sm font-semibold text-dark-purple">
-                              {user.first_name} {user.last_name}
-                            </div>
-                          </div>
-                          <span
-                            className={`rounded-full px-2 py-1 text-xs font-bold ${
-                              checked ? 'bg-[#526f59] text-white' : 'bg-[#f1f2ef] text-gray-600'
-                            }`}
-                          >
-                            {checked ? 'Pievienots' : 'Pievienot'}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
-                )}
-              </div>
-            )}
-
-            {error && (
-              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
-              <button type="button" onClick={closeEditor} className="btn-ghost w-full rounded-lg">
-                Atcelt
-              </button>
-              <button type="submit" disabled={saving} className="btn-primary w-full rounded-lg disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto">
-                {saving ? 'Saglabā...' : 'Saglabāt'}
-              </button>
-            </div>
-          </form>
-        </BasePopup>
+        <MyEventEditor
+          event={selectedEvent}
+          formData={formData}
+          setFormData={setFormData}
+          users={users}
+          usersLoading={usersLoading}
+          saving={saving}
+          error={localError}
+          onClose={closeEditor}
+          onSubmit={handleSubmit}
+          onToggleSharedUser={toggleSharedUser}
+        />
       )}
     </div>
   );

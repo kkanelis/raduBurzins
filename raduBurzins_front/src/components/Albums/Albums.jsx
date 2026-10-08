@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import BasePopup from "../../components/BasePopoup";
+import AlbumPhotoViewer from "./AlbumPhotoViewer";
+import AlbumPhotoBatchForm from "./AlbumPhotoBatchForm";
+import AlbumDetailsFields from "./AlbumDetailsFields";
+import AlbumDetailPanel from "./AlbumDetailPanel";
 import { useAuth } from "../../context/useAuth";
 import api from "../../services/api";
 
@@ -88,7 +92,6 @@ function Albums() {
       setAlbums(nextAlbums);
       setSelectedAlbumId((current) => current || nextAlbums[0]?.id || "");
       setSelectedPhotoIndex(0);
-      console.log(response);
     } catch (requestError) {
       setError(requestError?.response?.data?.message || "Neizdevās ielādēt albumus.");
     } finally {
@@ -99,9 +102,7 @@ function Albums() {
   const loadUsers = async () => {
     try {
       const response = await api.get("/api/users/status");
-      const combined = [...(response.data.online || []), ...(response.data.offline || [])];
-      const uniqueUsers = Array.from(new Map(combined.map((user) => [user.id, user])).values());
-      setUsers(uniqueUsers);
+      setUsers(Array.isArray(response.data?.users) ? response.data.users : []);
     } catch {
       setUsers([]);
     }
@@ -560,163 +561,29 @@ function Albums() {
               })}
             </aside>
 
-            <section className="min-w-0 space-y-4">
-              {selectedAlbum ? (
-                <>
-                  <div className="flex flex-col gap-4 border-b border-[#e4e8e1] pb-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#edf2ec] text-2xl">
-                        {selectedAlbum.photos?.[0]?.image_path ? (
-                          <img src={selectedAlbum.photos[0].image_path} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          selectedAlbum.emoji || "📷"
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold uppercase text-[#58735e]">{selectedAlbum.category || "Albums"}</div>
-                        <h2 className="mt-1 break-words text-xl font-black text-dark-purple sm:text-2xl">{selectedAlbum.title}</h2>
-                        {selectedAlbum.description && (
-                          <p className="mt-1 max-w-2xl break-words text-sm text-muted">{selectedAlbum.description}</p>
-                        )}
-                        <span className={`mt-2 inline-flex rounded-md px-2 py-1 text-xs font-bold ${selectedAlbum.is_public ? "bg-[#eaf2e9] text-[#3f6b45]" : "bg-[#fff2df] text-[#9b651a]"}`}>
-                          {selectedAlbum.is_public ? "Publisks" : "Tikai izvēlētajiem cilvēkiem"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-                        {isAlbumCreator ? (
-                          <>
-                            <button type="button" onClick={openAlbumEditor} className="btn-ghost w-full rounded-lg px-3 py-2 text-xs sm:w-auto sm:text-sm">
-                              Labot albumu
-                            </button>
-                            <button type="button" onClick={deleteAlbum} disabled={deletingAlbum} className="btn-ghost w-full rounded-lg px-3 py-2 text-xs sm:w-auto sm:text-sm">
-                              {deletingAlbum ? "Dzēš..." : "Dzēst albumu"}
-                            </button>
-                            <button type="button" onClick={() => setShowAddPhotoPanel((current) => !current)} className="btn-primary col-span-2 w-full rounded-lg px-3 py-2 text-xs sm:col-span-1 sm:w-auto sm:text-sm">
-                              {showAddPhotoPanel ? "Aizvērt foto pievienošanu" : "Pievienot vēl foto"}
-                            </button>
-                          </>
-                        ) : null}
-                    </div>
-                  </div>
-
-                  {isAlbumCreator && showAddPhotoPanel ? (
-                  <div className="rounded-[1.75rem] border border-white/70 bg-white/88 p-5 shadow-soft sm:p-6">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <h3 className="text-xl font-black text-dark-purple">Pievienot vēl foto</h3>
-                        <p className="mt-2 text-sm text-muted">
-                          Atver vienu reizi un izvēlies vairākus foto failus. Tos vari pielāgot vai pievienot vēlāk.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 rounded-[1.5rem] border border-dashed border-medium-purple/25 bg-white/70 p-4">
-                      <label className="grid gap-2">
-                        <span className="text-sm font-semibold text-dark-purple">Atlasīt vairākus foto vienlaikus</span>
-                        <label className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-medium-purple/20 bg-warm-beige/20 px-4 py-3 text-sm font-semibold text-dark-purple transition hover:bg-warm-beige/35">
-                          <span className="truncate">
-                            {photos.some((photo) => photo.image) ? "Foto faili izvēlēti" : "Izvēlēties failu"}
-                          </span>
-                          <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold text-medium-purple">
-                            Pārlūkot
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleGallerySelection}
-                            className="sr-only"
-                          />
-                        </label>
-                      </label>
-                      <p className="mt-2 text-xs text-muted">
-                        Izvēlētie faili tiks pievienoti kā atsevišķi foto ieraksti zemāk.
-                      </p>
-                    </div>
-
-                    {photos.some((photo) => photo.image) ? (
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        {photos.map((photo, index) => {
-                          if (!photo.image) return null;
-
-                          return (
-                            <div key={`${photo.image.name}-${index}`} className="rounded-2xl border border-[#eee5dc] bg-[#fcfaf8] p-3">
-                              <div className="flex items-start gap-3">
-                                <img
-                                  src={photoPreviewUrls[index] || ""}
-                                  alt={photo.image.name}
-                                  className="h-20 w-20 shrink-0 rounded-xl object-cover"
-                                />
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-bold text-dark-purple">{photo.image.name}</p>
-                                  <p className="mt-1 text-xs text-muted">
-                                    {(photo.image.size / 1024 / 1024).toFixed(2)} MB
-                                  </p>
-                                </div>
-                                <button type="button" onClick={() => removePhotoRow(index)} className="btn-ghost px-2 py-1 text-xs">
-                                  Noņemt
-                                </button>
-                              </div>
-                              <div className="mt-3 grid gap-2">
-                                <input
-                                  value={photo.title}
-                                  onChange={(event) => updatePhotoField(index, "title", event.target.value)}
-                                  className="input-field"
-                                  placeholder="Foto nosaukums (nav obligāti)"
-                                />
-                                <input
-                                  value={photo.note}
-                                  onChange={(event) => updatePhotoField(index, "note", event.target.value)}
-                                  className="input-field"
-                                  placeholder="Piezīme (nav obligāti)"
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-
-                    <div className="mt-5 flex justify-center border-t border-[#eee5dc] pt-4">
-                      <button type="button" onClick={handleAddPhoto} disabled={uploadingPhoto} className="btn-primary px-20 py-2">
-                        {uploadingPhoto ? "Saglabā..." : "Pievienot foto"}
-                      </button>
-                    </div>
-                  </div>
-                  ) : null}
-
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    {selectedAlbum.photos?.map((item, index) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => openViewerAt(index)}
-                        className="group min-w-0 overflow-hidden rounded-lg border border-[#e4e8e1] bg-white text-left transition hover:border-[#bdcdbf] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#66836b]/30"
-                      >
-                        <div className="aspect-[4/3] overflow-hidden bg-[#edf1eb]">
-                          <img src={item.image_path} alt={item.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
-                        </div>
-                        <div className="min-w-0 p-3 sm:p-4">
-                          <div className="flex min-w-0 items-center justify-between gap-2">
-                            <h3 className="min-w-0 truncate text-sm font-extrabold text-dark-purple sm:text-base">{item.title}</h3>
-                            <span className="shrink-0 rounded-md bg-[#f4f6f2] px-2 py-1 text-xs font-bold text-[#58735e]">
-                              {item.likes_count || 0} ♥
-                            </span>
-                          </div>
-                          {item.note && <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted sm:text-sm">{item.note}</p>}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              ) : (
+            {selectedAlbum ? (
+              <AlbumDetailPanel
+                album={selectedAlbum}
+                isAlbumCreator={isAlbumCreator}
+                showAddPhotoPanel={showAddPhotoPanel}
+                deletingAlbum={deletingAlbum}
+                photos={photos}
+                photoPreviewUrls={photoPreviewUrls}
+                uploadingPhoto={uploadingPhoto}
+                onEditAlbum={openAlbumEditor}
+                onDeleteAlbum={deleteAlbum}
+                onToggleAddPhotoPanel={() => setShowAddPhotoPanel((current) => !current)}
+                onGallerySelection={handleGallerySelection}
+                onRemovePhoto={removePhotoRow}
+                onUpdatePhotoField={updatePhotoField}
+                onAddPhoto={handleAddPhoto}
+                onOpenPhoto={openViewerAt}
+              />
+            ) : (
                 <div className="card surface-strong p-6 text-muted">
                   {loading ? "Ielādē albumus..." : "Nav pieejamu albumu."}
                 </div>
-              )}
-            </section>
+            )}
           </div>
         </div>
       </div>
@@ -724,189 +591,23 @@ function Albums() {
       {showCreateModal && (
         <BasePopup title="Jauns albums" onClose={() => setShowCreateModal(false)} width="980px">
           <form onSubmit={handleCreate} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-dark-purple">Nosaukums</span>
-                <input name="title" value={formData.title} onChange={handleChange} className="input-field" placeholder="Piemēram: Kāzas" />
-              </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-dark-purple">Kategorija</span>
-                <input name="category" value={formData.category} onChange={handleChange} className="input-field" placeholder="Notikumu albums" />
-              </label>
-            </div>
+            <AlbumDetailsFields
+              formData={formData}
+              users={users}
+              sharedUsersLabel={sharedUsersLabel}
+              onChange={handleChange}
+              onTogglePublic={() => setFormData((previous) => ({ ...previous, is_public: !previous.is_public }))}
+              onToggleSharedUser={toggleSharedUser}
+            />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-dark-purple">Emoji</span>
-                <input name="emoji" value={formData.emoji} onChange={handleChange} className="input-field" placeholder="📷" />
-              </label>
-            </div>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-dark-purple">Apraksts</span>
-              <textarea name="description" value={formData.description} onChange={handleChange} className="text-area-field" placeholder="Kāds ir šis albums?" />
-            </label>
-
-            <div className="rounded-2xl border border-dashed border-medium-purple/25 bg-white/70 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-bold text-dark-purple">Foto, ko pievienosi albumam</h3>
-                  <p className="mt-1 text-xs text-muted">Vari vienlaikus izvēlēties vairākus foto failus.</p>
-                </div>
-                <button type="button" onClick={addPhotoRow} className="btn-ghost px-4 py-2 text-sm">
-                  + Foto rinda
-                </button>
-              </div>
-
-              <div className="mt-4 rounded-[1.5rem] border border-dashed border-medium-purple/25 bg-white p-4">
-                <label className="grid gap-2">
-                  <span className="text-sm font-semibold text-dark-purple">Atlasīt vairākus foto vienlaikus</span>
-                  <label className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-medium-purple/20 bg-warm-beige/20 px-4 py-3 text-sm font-semibold text-dark-purple transition hover:bg-warm-beige/35">
-                    <span className="truncate">
-                      {photos.some((photo) => photo.image) ? "Foto faili izvēlēti" : "Izvēlēties failu"}
-                    </span>
-                    <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold text-medium-purple">
-                      Pārlūkot
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleGallerySelection}
-                      className="sr-only"
-                    />
-                  </label>
-                </label>
-              </div>
-
-              <div className="mt-4 grid gap-4">
-                {photos.map((photo, index) => {
-                  return (
-                    <div key={index} className="rounded-[1.5rem] border border-white/80 bg-white p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/80 bg-warm-beige/30 shadow-sm">
-                            {photo.image ? (
-                              <img
-                                src={photoPreviewUrls[index] || ""}
-                                alt={photo.image.name || `Foto ${index + 1}`}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-2xl text-medium-purple">
-                                📷
-                              </div>
-                            )}
-                          </div>
-
-                          <div>
-                            <h4 className="font-bold text-dark-purple">Foto {index + 1}</h4>
-                            <p className="text-xs text-muted">
-                              {photo.image?.name ? `Fails: ${photo.image.name}` : "Fails nav izvēlēts"}
-                            </p>
-                          </div>
-                        </div>
-
-                        <button type="button" onClick={() => removePhotoRow(index)} className="btn-ghost px-3 py-2 text-sm">
-                          Noņemt
-                        </button>
-                      </div>
-
-                      <div className="mt-4 grid gap-4 md:grid-cols-3">
-                        <label className="grid gap-2 md:col-span-1">
-                          <span className="text-sm font-semibold text-dark-purple">Nosaukums</span>
-                          <input
-                            value={photo.title}
-                            onChange={(event) => updatePhotoField(index, "title", event.target.value)}
-                            className="input-field"
-                            placeholder="Piemēram: Ierašanās"
-                          />
-                        </label>
-                        <label className="grid gap-2 md:col-span-1">
-                          <span className="text-sm font-semibold text-dark-purple">Piezīme</span>
-                          <input
-                            value={photo.note}
-                            onChange={(event) => updatePhotoField(index, "note", event.target.value)}
-                            className="input-field"
-                            placeholder="Neliels apraksts"
-                          />
-                        </label>
-                        <label className="grid gap-2 md:col-span-1">
-                          <span className="text-sm font-semibold text-dark-purple">Attēls</span>
-                          <div className="rounded-2xl border border-white/80 bg-white px-4 py-3 shadow-sm">
-                            <label className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-medium-purple/20 bg-warm-beige/20 px-4 py-3 text-sm font-semibold text-dark-purple transition hover:bg-warm-beige/35">
-                              <span className="truncate">
-                                {photo.image?.name ? photo.image.name : "Izvēlēties failu"}
-                              </span>
-                              <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold text-medium-purple">
-                                Pārlūkot
-                              </span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(event) => updatePhotoField(index, "image", event.target.files?.[0] || null)}
-                                className="sr-only"
-                              />
-                            </label>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-dashed border-medium-purple/25 bg-white/70 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-bold text-dark-purple">Privātums</h3>
-                  <p className="mt-1 text-xs text-muted">{sharedUsersLabel}</p>
-                </div>
-                <button type="button" onClick={() => setFormData((prev) => ({ ...prev, is_public: !prev.is_public }))} className="btn-ghost px-4 py-2 text-sm">
-                  {formData.is_public ? "Padarīt privātu" : "Padarīt publisku"}
-                </button>
-              </div>
-
-              {!formData.is_public ? (
-                <div className="mt-4 rounded-[1.5rem] border border-white/80 bg-white p-4">
-                  <div className="mb-3">
-                    <h4 className="text-sm font-bold text-dark-purple">Kas var redzēt albumu?</h4>
-                    <p className="mt-1 text-xs text-muted">Atzīmē konkrētus cilvēkus, ja albums nav publisks.</p>
-                  </div>
-
-                  {users.length > 0 ? (
-                    <div className="grid max-h-64 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                      {users.map((user) => {
-                        const checked = formData.shared_with_user_ids.includes(user.id);
-                        return (
-                          <button
-                            key={user.id}
-                            type="button"
-                            onClick={() => toggleSharedUser(user.id)}
-                            className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left transition ${
-                              checked ? "border-medium-purple bg-medium-purple/10" : "border-white/80 bg-white hover:bg-gray-50"
-                            }`}
-                          >
-                            <div>
-                              <div className="text-sm font-semibold text-dark-purple">
-                                {user.first_name} {user.last_name}
-                              </div>
-                              <div className="text-xs text-muted">{user.is_admin ? "Administrators" : "Lietotājs"}</div>
-                            </div>
-                            <span className={`rounded-full px-2 py-1 text-xs font-bold ${checked ? "bg-medium-purple text-white" : "bg-gray-100 text-gray-600"}`}>
-                              {checked ? "Pievienots" : "Pievienot"}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
-                  )}
-                </div>
-              ) : null}
-            </div>
+            <AlbumPhotoBatchForm
+              photos={photos}
+              photoPreviewUrls={photoPreviewUrls}
+              onAddRow={addPhotoRow}
+              onRemoveRow={removePhotoRow}
+              onGallerySelection={handleGallerySelection}
+              onUpdateField={updatePhotoField}
+            />
 
             {error ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
@@ -929,80 +630,14 @@ function Albums() {
       {showAlbumEditModal && (
         <BasePopup title="Labot albumu" onClose={() => setShowAlbumEditModal(false)} width="860px">
           <form onSubmit={handleUpdateAlbum} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-dark-purple">Nosaukums</span>
-                <input name="title" value={formData.title} onChange={handleChange} className="input-field" />
-              </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-dark-purple">Kategorija</span>
-                <input name="category" value={formData.category} onChange={handleChange} className="input-field" />
-              </label>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-dark-purple">Emoji</span>
-                <input name="emoji" value={formData.emoji} onChange={handleChange} className="input-field" />
-              </label>
-            </div>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-dark-purple">Apraksts</span>
-              <textarea name="description" value={formData.description} onChange={handleChange} className="text-area-field" />
-            </label>
-
-            
-            <div className="rounded-2xl border border-dashed border-medium-purple/25 bg-white/70 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-bold text-dark-purple">Privātums</h3>
-                  <p className="mt-1 text-xs text-muted">{sharedUsersLabel}</p>
-                </div>
-                <button type="button" onClick={() => setFormData((prev) => ({ ...prev, is_public: !prev.is_public }))} className="btn-ghost px-4 py-2 text-sm">
-                  {formData.is_public ? "Padarīt privātu" : "Padarīt publisku"}
-                </button>
-              </div>
-
-              {!formData.is_public ? (
-                <div className="mt-4 rounded-[1.5rem] border border-white/80 bg-white p-4">
-                  <div className="mb-3">
-                    <h4 className="text-sm font-bold text-dark-purple">Kas var redzēt albumu?</h4>
-                    <p className="mt-1 text-xs text-muted">Atzīmē konkrētus cilvēkus, ja albums nav publisks.</p>
-                  </div>
-
-                  {users.length > 0 ? (
-                    <div className="grid max-h-64 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                      {users.map((user) => {
-                        const checked = formData.shared_with_user_ids.includes(user.id);
-                        return (
-                          <button
-                            key={user.id}
-                            type="button"
-                            onClick={() => toggleSharedUser(user.id)}
-                            className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left transition ${
-                              checked ? "border-medium-purple bg-medium-purple/10" : "border-white/80 bg-white hover:bg-gray-50"
-                            }`}
-                          >
-                            <div>
-                              <div className="text-sm font-semibold text-dark-purple">
-                                {user.first_name} {user.last_name}
-                              </div>
-                              <div className="text-xs text-muted">{user.is_admin ? "Administrators" : "Lietotājs"}</div>
-                            </div>
-                            <span className={`rounded-full px-2 py-1 text-xs font-bold ${checked ? "bg-medium-purple text-white" : "bg-gray-100 text-gray-600"}`}>
-                              {checked ? "Pievienots" : "Pievienot"}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted">Nav pieejamu lietotāju izvēlei.</div>
-                  )}
-                </div>
-              ) : null}
-            </div>
+            <AlbumDetailsFields
+              formData={formData}
+              users={users}
+              sharedUsersLabel={sharedUsersLabel}
+              onChange={handleChange}
+              onTogglePublic={() => setFormData((previous) => ({ ...previous, is_public: !previous.is_public }))}
+              onToggleSharedUser={toggleSharedUser}
+            />
 
             <div className="flex flex-wrap justify-end gap-3">
               <button type="button" onClick={() => setShowAlbumEditModal(false)} className="btn-ghost">
@@ -1057,114 +692,22 @@ function Albums() {
       ) : null}
 
       {showViewer && selectedPhoto ? (
-        <div className="modal-backdrop p-2 sm:p-4" onClick={() => setShowViewer(false)}>
-          <div
-            className="mx-auto flex h-full max-h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151a16] text-white shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label={selectedPhoto.title || "Foto skatītājs"}
-          >
-            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-[#1b221c] px-3 py-3 sm:px-5">
-              <div className="min-w-0">
-                <div className="text-[10px] font-bold uppercase text-[#a9b6a8]">{selectedAlbum?.title || "Albums"}</div>
-                <h2 className="mt-0.5 truncate text-sm font-extrabold sm:text-base">{selectedPhoto.title}</h2>
-                {selectedPhoto.note && <p className="mt-0.5 line-clamp-1 text-xs text-white/60">{selectedPhoto.note}</p>}
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="text-xs font-semibold text-white/65">
-                  {selectedPhotoIndex + 1} / {selectedAlbum?.photos?.length || 1}
-                </span>
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-md text-lg text-white/75 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40"
-                  onClick={() => setShowViewer(false)}
-                  aria-label="Aizvērt foto"
-                  title="Aizvērt"
-                >
-                  ×
-                </button>
-              </div>
-            </header>
-
-            <div className="relative flex min-h-[40vh] flex-1 items-center justify-center overflow-hidden bg-[#0c0f0c] p-3 sm:min-h-0 sm:p-6">
-              <img
-                src={selectedPhoto.image_path}
-                alt={selectedPhoto.title}
-                className="max-h-[68vh] w-full object-contain sm:max-h-[74vh]"
-              />
-              <button
-                type="button"
-                onClick={goPrevious}
-                aria-label="Iepriekšējais foto"
-                title="Iepriekšējais foto"
-                className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-xl text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white/50 sm:left-4 sm:h-11 sm:w-11"
-              >
-                <span aria-hidden="true">←</span>
-              </button>
-              <button
-                type="button"
-                onClick={goNext}
-                aria-label="Nākamais foto"
-                title="Nākamais foto"
-                className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-xl text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white/50 sm:right-4 sm:h-11 sm:w-11"
-              >
-                <span aria-hidden="true">→</span>
-              </button>
-            </div>
-
-            <footer className="grid shrink-0 gap-2 border-t border-white/10 bg-[#1b221c] p-3 sm:flex sm:items-center sm:justify-between sm:px-5">
-              <div className="grid grid-cols-2 gap-2 sm:flex">
-                <button
-                  type="button"
-                  onClick={() => handleReaction("❤️")}
-                  disabled={reactionLoading}
-                  className="rounded-md border border-white/15 px-3 py-2 text-xs font-bold text-white/85 transition hover:bg-white/10 disabled:opacity-50 sm:text-sm"
-                >
-                  ❤️ Patīk
-                </button>
-                <button
-                  type="button"
-                  onClick={removeReaction}
-                  disabled={reactionLoading}
-                  className="rounded-md border border-white/15 px-3 py-2 text-xs font-bold text-white/70 transition hover:bg-white/10 disabled:opacity-50 sm:text-sm"
-                >
-                  Noņemt reakciju
-                </button>
-              </div>
-              {isAlbumCreator && (
-                <div className="grid grid-cols-2 gap-2 sm:flex">
-                  <button type="button" onClick={openPhotoEditor} className="rounded-md bg-[#526f59] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#63836a] sm:text-sm">
-                    Labot foto
-                  </button>
-                  <button type="button" onClick={deletePhoto} disabled={deletingPhoto} className="rounded-md border border-[#d89685]/40 px-3 py-2 text-xs font-bold text-[#f1b7a7] transition hover:bg-white/10 disabled:opacity-50 sm:text-sm">
-                    {deletingPhoto ? "Dzēš..." : "Dzēst foto"}
-                  </button>
-                </div>
-              )}
-            </footer>
-
-            {selectedPhoto.reactions && Object.keys(selectedPhoto.reactions).length > 0 ? (
-              <div className="max-h-24 shrink-0 overflow-y-auto border-t border-white/10 bg-[#171d18] px-3 py-2 sm:px-5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase text-white/50">Reakcijas</span>
-                  {Object.entries(selectedPhoto.reactions).map(([userId, reaction]) => {
-                    const reactor = usersById.get(String(userId));
-                    const reactorName = reactor
-                      ? `${reactor.first_name || ""} ${reactor.last_name || ""}`.trim()
-                      : `Lietotājs #${userId}`;
-                    return (
-                      <span key={userId} className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 text-xs text-white/80">
-                        <span className="truncate">{reactorName}</span>
-                        <span>{reaction}</span>
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
+        <AlbumPhotoViewer
+          album={selectedAlbum}
+          photo={selectedPhoto}
+          photoIndex={selectedPhotoIndex}
+          usersById={usersById}
+          isAlbumCreator={isAlbumCreator}
+          reactionLoading={reactionLoading}
+          deletingPhoto={deletingPhoto}
+          onClose={() => setShowViewer(false)}
+          onPrevious={goPrevious}
+          onNext={goNext}
+          onReact={handleReaction}
+          onRemoveReaction={removeReaction}
+          onEditPhoto={openPhotoEditor}
+          onDeletePhoto={deletePhoto}
+        />
       ) : null}
     </div>
   );
