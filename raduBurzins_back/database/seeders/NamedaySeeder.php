@@ -10,13 +10,13 @@ class NamedaySeeder extends Seeder
 {
     public function run(): void
     {
-        $json = File::get(database_path('seeders/Nameday.json'));
+        $json = File::get(database_path('seeders/Namedays.json'));
         $namedays = json_decode($json, true);
 
         foreach ($namedays as $date => $names) {
             Nameday::create([
                 'date' => $date,
-                'surnames' => $names,
+                'names' => $names,
             ]);
         }
     }

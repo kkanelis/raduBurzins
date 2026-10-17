@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('special_days', function (Blueprint $table): void {
-            $table->dropColumn('is_approved');
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('phone')->nullable()->change();
         });
     }
 
     public function down(): void
     {
-        Schema::table('special_days', function (Blueprint $table): void {
-            $table->boolean('is_approved')->default(false);
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('phone')->nullable(false)->change();
         });
     }
 };

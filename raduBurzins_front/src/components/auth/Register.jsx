@@ -120,8 +120,8 @@ function Register() {
                     </div>
 
                     <div className="col-span-1">
-                        <label className="block text-sm font-medium text-muted mb-1">Telefona numurs *</label>
-                        <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required placeholder="+371 2X XXX XXX" className="w-full rounded-md border border-black/30 px-3 py-2 bg-white/80" />
+                        <label className="block text-sm font-medium text-muted mb-1">Telefona numurs</label>
+                        <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+371 2X XXX XXX" className="w-full rounded-md border border-black/30 px-3 py-2 bg-white/80" />
                     </div>
 
                     <div className="col-span-1">

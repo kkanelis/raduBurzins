@@ -22,7 +22,7 @@ class RegisteredUserController extends Controller
             'first_name' => 'required|string|max:50',
             'last_name' => 'required|string|max:50',
             'nickname' => 'nullable|string|max:50|unique:users,nickname',
-            'phone' => 'required|string|max:12|unique:users,phone',
+            'phone' => 'nullable|string|max:12|unique:users,phone',
             'email' => 'required|string|lowercase|email|max:255|unique:users,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'terms' => 'accepted',

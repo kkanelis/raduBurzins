@@ -67,9 +67,14 @@ function MyEventEditor({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-muted">Laiks</label>
+              <label className="mb-1 block text-sm font-medium text-muted">Laiks (00:00–23:59)</label>
               <input
-                type="time"
+                type="text"
+                inputMode="text"
+                placeholder="Stunda:Minūte"
+                maxLength={5}
+                pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                title="Ievadi laiku formātā 00:00–23:59"
                 value={formData.event_time}
                 onChange={(eventChange) => updateField('event_time', eventChange.target.value)}
                 className="w-full rounded-lg border border-[#dedfd7] bg-[#fcfcfa] px-3 py-2 text-sm outline-none transition focus:border-[#61836a] focus:bg-white focus:ring-4 focus:ring-[#61836a]/10"

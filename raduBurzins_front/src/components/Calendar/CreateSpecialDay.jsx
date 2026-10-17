@@ -73,7 +73,7 @@ function CreateSpecialDay({ onClose, onSuccess }) {
   };
 
   return (
-    <BasePopup title="Iesniegt jaunu notikumu" onClose={onClose} width="760px">
+    <BasePopup title="Pievienot notikumu" onClose={onClose} width="760px">
       {error && <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -116,9 +116,14 @@ function CreateSpecialDay({ onClose, onSuccess }) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-muted">Laiks</label>
+            <label className="mb-1 block text-sm font-medium text-muted">Laiks (00:00–23:59)</label>
             <input
-              type="time"
+              type="text"
+              inputMode="text"
+              placeholder="HH:mm"
+              maxLength={5}
+              pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+              title="Ievadi laiku formātā 00:00–23:59"
               value={formData.event_time}
               onChange={(e) => setFormData({ ...formData, event_time: e.target.value })}
               className="w-full rounded-md border border-black/30 bg-white/80 px-3 py-2"
@@ -214,7 +219,7 @@ function CreateSpecialDay({ onClose, onSuccess }) {
 
         <div className="flex justify-end gap-3">
           <button type="button" onClick={onClose} className="btn-ghost">Atcelt</button>
-          <button type="submit" className="btn-primary">Iesniegt</button>
+          <button type="submit" className="btn-primary">Pievienot</button>
         </div>
       </form>
     </BasePopup>
