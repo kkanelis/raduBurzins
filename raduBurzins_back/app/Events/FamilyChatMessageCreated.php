@@ -35,7 +35,7 @@ class FamilyChatMessageCreated implements ShouldBroadcastNow
             'fromUserId' => $this->message->user_id,
             'fromName' => trim(($this->message->user?->first_name ?? '').' '.($this->message->user?->last_name ?? '')) ?: 'Lietotājs',
             'text' => $this->message->text,
-            'photo' => $this->message->photo_path ? asset('storage/'.$this->message->photo_path) : null,
+            'photo' => $this->message->photo_path ? url('/api/chat-messages/'.$this->message->id.'/photo') : null,
             'photoName' => $this->message->photo_name,
             'createdAt' => $this->message->created_at?->toISOString(),
         ];

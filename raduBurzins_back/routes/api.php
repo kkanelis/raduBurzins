@@ -47,11 +47,13 @@ Route::middleware(['auth:sanctum', EnsureUserIsApproved::class])->group(function
     // Family chat routes
     Route::get('/chat-messages', [ChatMessageController::class, 'index']);
     Route::post('/chat-messages', [ChatMessageController::class, 'store']);
+    Route::get('/chat-messages/{message}/photo', [ChatMessageController::class, 'photo']);
 
     // Album routes
     Route::get('/albums', [AlbumController::class, 'index']);
     Route::post('/albums', [AlbumController::class, 'store']);
     Route::get('/albums/{album}', [AlbumController::class, 'show']);
+    Route::get('/albums/{album}/photos/{photo}/file', [AlbumController::class, 'photo']);
     Route::put('/albums/{album}', [AlbumController::class, 'update']);
     Route::post('/albums/{album}/photos', [AlbumController::class, 'addPhoto']);
     Route::put('/albums/{album}/photos/{photo}', [AlbumController::class, 'updatePhoto']);

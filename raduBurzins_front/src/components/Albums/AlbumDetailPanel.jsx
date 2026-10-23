@@ -1,3 +1,5 @@
+import PrivateImage from "../PrivateImage";
+
 function AlbumDetailPanel({
   album,
   isAlbumCreator,
@@ -6,6 +8,8 @@ function AlbumDetailPanel({
   photos,
   photoPreviewUrls,
   uploadingPhoto,
+  photoPagination,
+  photoPageLoading,
   onEditAlbum,
   onDeleteAlbum,
   onToggleAddPhotoPanel,
@@ -14,6 +18,7 @@ function AlbumDetailPanel({
   onUpdatePhotoField,
   onAddPhoto,
   onOpenPhoto,
+  onPhotoPageChange,
 }) {
   return (
     <section className="min-w-0 space-y-4">
@@ -21,7 +26,7 @@ function AlbumDetailPanel({
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#edf2ec] text-2xl">
             {album.photos?.[0]?.image_path ? (
-              <img src={album.photos[0].image_path} alt="" className="h-full w-full object-cover" />
+              <PrivateImage src={album.photos[0].image_path} alt="" className="h-full w-full object-cover" />
             ) : (
               album.emoji || "📷"
             )}
@@ -146,7 +151,7 @@ function AlbumDetailPanel({
             className="group min-w-0 overflow-hidden rounded-lg border border-[#e4e8e1] bg-white text-left transition hover:border-[#bdcdbf] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#66836b]/30"
           >
             <div className="aspect-[4/3] overflow-hidden bg-[#edf1eb]">
-              <img src={photo.image_path} alt={photo.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+              <PrivateImage src={photo.image_path} alt={photo.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
             </div>
             <div className="min-w-0 p-3 sm:p-4">
               <div className="flex min-w-0 items-center justify-between gap-2">
@@ -160,6 +165,29 @@ function AlbumDetailPanel({
           </button>
         ))}
       </div>
+      {photoPagination.last_page > 1 && (
+        <nav className="flex items-center justify-center gap-3" aria-label="Foto lapas">
+          <button
+            type="button"
+            onClick={() => onPhotoPageChange(photoPagination.current_page - 1)}
+            disabled={photoPageLoading || photoPagination.current_page <= 1}
+            className="btn-ghost"
+          >
+            Iepriekšējie foto
+          </button>
+          <span className="text-sm font-semibold text-muted">
+            {photoPagination.current_page} / {photoPagination.last_page}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPhotoPageChange(photoPagination.current_page + 1)}
+            disabled={photoPageLoading || photoPagination.current_page >= photoPagination.last_page}
+            className="btn-ghost"
+          >
+            Nākamie foto
+          </button>
+        </nav>
+      )}
     </section>
   );
 }

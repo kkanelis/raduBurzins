@@ -25,10 +25,31 @@ class ProfileController extends Controller
         $user = $request->user();
         $validated = $request->validated();
 
+        $previousAvatarPath = $user->avatar_path;
+
         $user->fill($validated);
 
         if ($request->hasFile('avatar')) {
-            $this->replaceAvatar($user, $request);
+            $newPath = $this->replaceAvatar($user, $request);
+
+            try {
+                $user->save();
+            } catch (\Throwable $e) {
+                if ($newPath && Storage::disk('public')->exists($newPath)) {
+                    Storage::disk('public')->delete($newPath);
+                }
+
+                throw $e;
+            }
+
+            if ($previousAvatarPath && $previousAvatarPath !== $newPath) {
+                Storage::disk('public')->delete($previousAvatarPath);
+            }
+
+            return response()->json([
+                'message' => 'Profils saglabāts.',
+                'user' => $user->fresh(),
+            ]);
         }
 
         $user->save();
@@ -48,8 +69,29 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+        $previousAvatarPath = $user->avatar_path;
+
         if ($request->hasFile('avatar')) {
-            $this->replaceAvatar($user, $request);
+            $newPath = $this->replaceAvatar($user, $request);
+
+            try {
+                $user->save();
+            } catch (\Throwable $e) {
+                if ($newPath && Storage::disk('public')->exists($newPath)) {
+                    Storage::disk('public')->delete($newPath);
+                }
+
+                throw $e;
+            }
+
+            if ($previousAvatarPath && $previousAvatarPath !== $newPath) {
+                Storage::disk('public')->delete($previousAvatarPath);
+            }
+
+            return response()->json([
+                'message' => 'Avatar updated successfully.',
+                'user' => $user->fresh(),
+            ]);
         }
         $user->save();
 
@@ -59,19 +101,16 @@ class ProfileController extends Controller
         ]);
     }
 
-    private function replaceAvatar(User $user, Request $request): void
+    private function replaceAvatar(User $user, Request $request): string
     {
-        $previousPath = $user->avatar_path;
         $newPath = $request->file('avatar')->store('avatars', 'public');
 
         if (! $newPath) {
-            return;
+            throw new \RuntimeException('Avatar file could not be stored.');
         }
 
         $user->avatar_path = $newPath;
 
-        if ($previousPath) {
-            Storage::disk('public')->delete($previousPath);
-        }
+        return $newPath;
     }
 }

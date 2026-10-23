@@ -14,10 +14,10 @@ class SurnamedaySeeder extends Seeder
         $surnamedays = json_decode($json, true);
 
         foreach ($surnamedays as $date => $surnames) {
-            Surnameday::create([
-                'date' => $date,
-                'surnames' => $surnames,
-            ]);
+            Surnameday::updateOrCreate(
+                ['date' => $date],
+                ['surnames' => $surnames]
+            );
         }
     }
 }

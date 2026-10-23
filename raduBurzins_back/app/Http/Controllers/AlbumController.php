@@ -7,6 +7,7 @@ use App\Models\AlbumPhoto;
 use App\Support\SharedUserIdList;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -17,15 +18,17 @@ class AlbumController extends Controller
         $userId = $request->user()->getKey();
 
         $albums = Album::query()
-            ->with(['photos' => fn ($query) => $query->latest()])
+            ->withCount('photos')
+            ->with(['photos' => fn ($query) => $query->latest()->limit(1)])
             ->where(function ($query) use ($userId) {
                 $query->where('user_id', $userId)
                     ->orWhere('is_public', true)
                     ->orWhereJsonContains('shared_with_user_ids', $userId);
             })
             ->latest()
-            ->get()
-            ->map(fn (Album $album) => $this->normalizeAlbum($album));
+            ->paginate(12);
+
+        $albums->getCollection()->transform(fn (Album $album) => $this->normalizeAlbum($album));
 
         return response()->json($albums);
     }
@@ -34,7 +37,7 @@ class AlbumController extends Controller
     {
         $this->authorizeAlbum($request, $album);
 
-        return response()->json($this->normalizeAlbum($album->load(['photos' => fn ($query) => $query->latest()])));
+        return response()->json($this->normalizeAlbumPage($album));
     }
 
     public function store(Request $request): JsonResponse
@@ -56,33 +59,53 @@ class AlbumController extends Controller
             'photos.*.image' => 'required_with:photos|image|max:8192',
         ]);
 
-        $album = Album::create([
-            'user_id' => $request->user()?->getKey(),
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'category' => $validated['category'] ?? null,
-            'emoji' => $validated['emoji'] ?? null,
-            'is_public' => $validated['is_public'] ?? true,
-            'shared_with_user_ids' => array_values(array_unique(array_map('intval', $validated['shared_with_user_ids'] ?? []))),
-        ]);
-
         $photos = $request->file('photos', []);
+        $storedPaths = [];
 
-        foreach ($photos as $photo => $photoData) {
-            $imagePath = $photoData['image']->store('albums/'.$album->id, 'public');
-            AlbumPhoto::create([
-                'album_id' => $album->id,
-                'title' => $request->input("photos.$photo.title"),
-                'note' => $request->input("photos.$photo.note"),
-                'image_path' => $imagePath,
-                'reactions' => [],
-                'likes_count' => 0,
-            ]);
+        try {
+            $album = DB::transaction(function () use ($request, $validated, $photos, &$storedPaths) {
+                $album = Album::create([
+                    'user_id' => $request->user()?->getKey(),
+                    'title' => $validated['title'],
+                    'description' => $validated['description'] ?? null,
+                    'category' => $validated['category'] ?? null,
+                    'emoji' => $validated['emoji'] ?? null,
+                    'is_public' => $validated['is_public'] ?? true,
+                    'shared_with_user_ids' => array_values(array_unique(array_map('intval', $validated['shared_with_user_ids'] ?? []))),
+                ]);
+
+                foreach ($photos as $photo => $photoData) {
+                    $imagePath = $photoData['image']->store('albums/'.$album->id, 'private');
+
+                    if (! $imagePath) {
+                        throw new \RuntimeException('Album photo could not be stored.');
+                    }
+
+                    $storedPaths[] = $imagePath;
+
+                    AlbumPhoto::create([
+                        'album_id' => $album->id,
+                        'title' => $request->input("photos.$photo.title"),
+                        'note' => $request->input("photos.$photo.note"),
+                        'image_path' => $imagePath,
+                        'reactions' => [],
+                        'likes_count' => 0,
+                    ]);
+                }
+
+                return $album;
+            });
+        } catch (\Throwable $e) {
+            foreach ($storedPaths as $storedPath) {
+                Storage::disk('private')->delete($storedPath);
+            }
+
+            throw $e;
         }
 
         return response()->json([
             'message' => 'Albums izveidots!',
-            'album' => $this->normalizeAlbum($album->fresh(['photos' => fn ($query) => $query->latest()])),
+            'album' => $this->normalizeAlbumPage($album->fresh()),
         ]);
     }
 
@@ -115,7 +138,7 @@ class AlbumController extends Controller
 
         return response()->json([
             'message' => 'Albums atjaunināts!',
-            'album' => $this->normalizeAlbum($album->fresh(['photos' => fn ($query) => $query->latest()])),
+            'album' => $this->normalizeAlbumPage($album->fresh()),
         ]);
     }
 
@@ -125,7 +148,7 @@ class AlbumController extends Controller
 
         foreach ($album->photos as $photo) {
             if ($photo->image_path) {
-                Storage::disk('public')->delete($photo->image_path);
+                Storage::disk('private')->delete($photo->image_path);
             }
         }
 
@@ -148,21 +171,33 @@ class AlbumController extends Controller
             'image' => 'required|image|max:8192',
         ]);
 
-        $imagePath = $request->file('image')->store('albums/'.$album->id, 'public');
+        $imagePath = $request->file('image')->store('albums/'.$album->id, 'private');
 
-        $photo = AlbumPhoto::create([
-            'album_id' => $album->id,
-            'title' => $validated['title'],
-            'note' => $validated['note'] ?? null,
-            'image_path' => $imagePath,
-            'reactions' => [],
-            'likes_count' => 0,
-        ]);
+        if (! $imagePath) {
+            return response()->json([
+                'message' => 'Neizdevās saglabāt jauno foto.',
+            ], 500);
+        }
+
+        try {
+            $photo = AlbumPhoto::create([
+                'album_id' => $album->id,
+                'title' => $validated['title'],
+                'note' => $validated['note'] ?? null,
+                'image_path' => $imagePath,
+                'reactions' => [],
+                'likes_count' => 0,
+            ]);
+        } catch (\Throwable $e) {
+            Storage::disk('private')->delete($imagePath);
+
+            throw $e;
+        }
 
         return response()->json([
             'message' => 'Foto pievienota veiksmīgi.',
             'photo' => $this->normalizePhoto($photo),
-            'album' => $this->normalizeAlbum($album->fresh(['photos' => fn ($query) => $query->latest()])),
+            'album' => $this->normalizeAlbumPage($album->fresh()),
         ], 201);
     }
 
@@ -178,11 +213,41 @@ class AlbumController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            if ($photo->image_path) {
-                Storage::disk('public')->delete($photo->image_path);
+            $previousPath = $photo->image_path;
+            $newPath = $request->file('image')->store('albums/'.$album->id, 'private');
+
+            if (! $newPath) {
+                return response()->json([
+                    'message' => 'Neizdevās saglabāt jauno foto.',
+                ], 500);
             }
 
-            $photo->image_path = $request->file('image')->store('albums/'.$album->id, 'public');
+            $photo->image_path = $newPath;
+
+            try {
+                $photo->fill([
+                    'title' => $validated['title'] ?? $photo->title,
+                    'note' => array_key_exists('note', $validated) ? $validated['note'] : $photo->note,
+                ]);
+
+                $photo->save();
+            } catch (\Throwable $e) {
+                if ($newPath && Storage::disk('private')->exists($newPath)) {
+                    Storage::disk('private')->delete($newPath);
+                }
+
+                throw $e;
+            }
+
+            if ($previousPath && $previousPath !== $newPath) {
+                Storage::disk('private')->delete($previousPath);
+            }
+
+            return response()->json([
+                'message' => 'Foto atjaunināta veiksmīgi.',
+                'photo' => $this->normalizePhoto($photo->fresh()),
+                'album' => $this->normalizeAlbumPage($album->fresh()),
+            ]);
         }
 
         $photo->fill([
@@ -195,7 +260,7 @@ class AlbumController extends Controller
         return response()->json([
             'message' => 'Foto atjaunināta veiksmīgi.',
             'photo' => $this->normalizePhoto($photo->fresh()),
-            'album' => $this->normalizeAlbum($album->fresh(['photos' => fn ($query) => $query->latest()])),
+            'album' => $this->normalizeAlbumPage($album->fresh()),
         ]);
     }
 
@@ -205,7 +270,7 @@ class AlbumController extends Controller
             'id' => $photo->id,
             'title' => $photo->title,
             'note' => $photo->note,
-            'image_path' => $photo->image_url,
+            'image_path' => $photo->image_path ? url('/api/albums/'.$photo->album_id.'/photos/'.$photo->id.'/file') : null,
             'reactions' => $photo->reactions ?? [],
             'likes_count' => $photo->likes_count ?? 0,
             'created_at' => $photo->created_at,
@@ -219,7 +284,7 @@ class AlbumController extends Controller
         $this->authorizePhotoBelongsToAlbum($photo, $album);
 
         if ($photo->image_path) {
-            Storage::disk('public')->delete($photo->image_path);
+            Storage::disk('private')->delete($photo->image_path);
         }
 
         $photo->delete();
@@ -227,6 +292,21 @@ class AlbumController extends Controller
         return response()->json([
             'message' => 'Foto izdzēsta veiksmīgi.',
         ]);
+    }
+
+    public function photo(Request $request, Album $album, AlbumPhoto $photo)
+    {
+        $this->authorizeAlbum($request, $album);
+        $this->authorizePhotoBelongsToAlbum($photo, $album);
+
+        if (! $photo->image_path || ! Storage::disk('private')->exists($photo->image_path)) {
+            abort(404);
+        }
+
+        return response()->file(
+            Storage::disk('private')->path($photo->image_path),
+            ['Content-Type' => Storage::disk('private')->mimeType($photo->image_path)]
+        );
     }
 
     // Photo reactions
@@ -241,16 +321,25 @@ class AlbumController extends Controller
         ]);
 
         $userId = (string) $request->user()?->getKey();
-        $reactions = $photo->reactions ?? [];
-        $reactions[$userId] = $validated['emoji'];
+        $updatedPhoto = DB::transaction(function () use ($photo, $userId, $validated) {
+            $lockedPhoto = AlbumPhoto::query()
+                ->whereKey($photo->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $photo->reactions = $reactions;
-        $photo->likes_count = count($reactions);
-        $photo->save();
+            $reactions = $lockedPhoto->reactions ?? [];
+            $reactions[$userId] = $validated['emoji'];
+
+            $lockedPhoto->reactions = $reactions;
+            $lockedPhoto->likes_count = count($reactions);
+            $lockedPhoto->save();
+
+            return $lockedPhoto;
+        });
 
         return response()->json([
             'message' => 'Reakcija saglabāta veiksmīgi.',
-            'photo' => $this->normalizePhoto($photo->fresh()),
+            'photo' => $this->normalizePhoto($updatedPhoto->fresh()),
         ]);
     }
 
@@ -260,17 +349,25 @@ class AlbumController extends Controller
         $this->authorizePhotoBelongsToAlbum($photo, $album);
 
         $userId = (string) $request->user()?->getKey();
-        $reactions = $photo->reactions ?? [];
+        $updatedPhoto = DB::transaction(function () use ($photo, $userId) {
+            $lockedPhoto = AlbumPhoto::query()
+                ->whereKey($photo->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        unset($reactions[$userId]);
+            $reactions = $lockedPhoto->reactions ?? [];
+            unset($reactions[$userId]);
 
-        $photo->reactions = $reactions;
-        $photo->likes_count = count($reactions);
-        $photo->save();
+            $lockedPhoto->reactions = $reactions;
+            $lockedPhoto->likes_count = count($reactions);
+            $lockedPhoto->save();
+
+            return $lockedPhoto;
+        });
 
         return response()->json([
             'message' => 'Reakcija noņemta veiksmīgi.',
-            'photo' => $this->normalizePhoto($photo->fresh()),
+            'photo' => $this->normalizePhoto($updatedPhoto->fresh()),
         ]);
     }
 
@@ -310,15 +407,36 @@ class AlbumController extends Controller
             'shared_with_user_ids' => SharedUserIdList::normalize($album->shared_with_user_ids),
             'created_at' => $album->created_at?->toDateTimeString(),
             'updated_at' => $album->updated_at?->toDateTimeString(),
+            'photos_count' => $album->photos_count ?? $album->photos->count(),
             'photos' => $album->photos
                 ->map(fn (AlbumPhoto $photo) => $this->normalizeAlbumPhoto($photo))
                 ->all(),
         ];
     }
 
+    private function normalizeAlbumPage(Album $album): array
+    {
+        $photos = $album->photos()
+            ->latest()
+            ->paginate(24, ['*'], 'photos_page');
+
+        $album->setRelation('photos', $photos->getCollection());
+        $album->setAttribute('photos_count', $photos->total());
+
+        $normalizedAlbum = $this->normalizeAlbum($album);
+        $normalizedAlbum['photos_pagination'] = [
+            'current_page' => $photos->currentPage(),
+            'last_page' => $photos->lastPage(),
+            'per_page' => $photos->perPage(),
+            'total' => $photos->total(),
+        ];
+
+        return $normalizedAlbum;
+    }
+
     public function normalizeAlbumPhoto(AlbumPhoto $photo): array
     {
-        $imageUrl = $photo->image_path ? asset('storage/'.$photo->image_path) : null;
+        $imageUrl = $photo->image_path ? url('/api/albums/'.$photo->album_id.'/photos/'.$photo->id.'/file') : null;
 
         return [
             'id' => $photo->id,

@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Events\FamilyChatMessageCreated;
 use App\Models\FamilyChatMessage;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ChatMessageController extends Controller
 {
@@ -73,16 +75,37 @@ class ChatMessageController extends Controller
         ]);
 
         $photoPath = $request->hasFile('photo')
-            ? $request->file('photo')->store('family-chat', 'public')
+            ? $request->file('photo')->store('family-chat', 'private')
             : null;
 
-        $message = FamilyChatMessage::create([
-            'user_id' => $request->user()->id,
-            'client_message_id' => $validated['client_message_id'] ?? null,
-            'text' => $validated['text'] ?? null,
-            'photo_path' => $photoPath,
-            'photo_name' => $validated['photo_name'] ?? null,
-        ]);
+        try {
+            $message = FamilyChatMessage::create([
+                'user_id' => $request->user()->id,
+                'client_message_id' => $validated['client_message_id'] ?? null,
+                'text' => $validated['text'] ?? null,
+                'photo_path' => $photoPath,
+                'photo_name' => $validated['photo_name'] ?? null,
+            ]);
+        } catch (QueryException $e) {
+            if ($photoPath) {
+                Storage::disk('private')->delete($photoPath);
+            }
+
+            $existingMessage = ! empty($validated['client_message_id'])
+                ? FamilyChatMessage::query()
+                    ->where('user_id', $request->user()->id)
+                    ->where('client_message_id', $validated['client_message_id'])
+                    ->first()
+                : null;
+
+            if (! $existingMessage) {
+                throw $e;
+            }
+
+            return response()->json([
+                'message' => $this->normalize($existingMessage->load('user:id,first_name,last_name')),
+            ]);
+        }
 
         Log::info('Family chat message stored', [
             'message_id' => $message->id,
@@ -97,6 +120,18 @@ class ChatMessageController extends Controller
         ], 201);
     }
 
+    public function photo(Request $request, FamilyChatMessage $message)
+    {
+        if (! $message->photo_path || ! Storage::disk('private')->exists($message->photo_path)) {
+            abort(404);
+        }
+
+        return response()->file(
+            Storage::disk('private')->path($message->photo_path),
+            ['Content-Type' => Storage::disk('private')->mimeType($message->photo_path)]
+        );
+    }
+
     private function normalize(FamilyChatMessage $message): array
     {
         return [
@@ -105,7 +140,7 @@ class ChatMessageController extends Controller
             'fromUserId' => $message->user_id,
             'fromName' => trim(($message->user?->first_name ?? '').' '.($message->user?->last_name ?? '')) ?: 'Lietotājs',
             'text' => $message->text,
-            'photo' => $message->photo_path ? asset('storage/'.$message->photo_path) : null,
+            'photo' => $message->photo_path ? url('/api/chat-messages/'.$message->id.'/photo') : null,
             'photoName' => $message->photo_name,
             'createdAt' => $message->created_at?->toISOString(),
         ];

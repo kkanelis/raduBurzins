@@ -15,9 +15,6 @@ return Application::configure(basePath: dirname(__DIR__))
             require base_path('routes/channels.php');
         },
     )
-    ->withCommands([
-        App\Console\Commands\ServeWithMigrations::class,
-    ])
     ->withMiddleware(function (Middleware $middleware): void {})
     ->withExceptions(function (Exceptions $exceptions): void {})
     ->create();

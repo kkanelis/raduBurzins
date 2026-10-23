@@ -1,3 +1,5 @@
+import PrivateImage from "../PrivateImage";
+
 const formatTime = (dateString) =>
   new Date(dateString).toLocaleTimeString("lv-LV", {
     hour: "2-digit",
@@ -36,7 +38,7 @@ function ChatMessageList({ messages, loading, error, currentUserId, containerRef
                   {message.text && <div className="whitespace-pre-wrap break-words text-sm leading-6">{message.text}</div>}
                   {message.photo && (
                     <div className={message.text ? "mt-3" : "-mx-4 -my-3"}>
-                      <img
+                      <PrivateImage
                         src={message.photo}
                         alt={message.photoName || "Pievienotā bilde"}
                         className="max-h-72 w-full object-cover"

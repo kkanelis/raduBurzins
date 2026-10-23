@@ -1,3 +1,5 @@
+import PrivateImage from "../PrivateImage";
+
 function AlbumPhotoViewer({
   album,
   photo,
@@ -46,7 +48,7 @@ function AlbumPhotoViewer({
         </header>
 
         <div className="relative flex min-h-[40vh] flex-1 items-center justify-center overflow-hidden bg-[#0c0f0c] p-3 sm:min-h-0 sm:p-6">
-          <img
+          <PrivateImage
             src={photo.image_path}
             alt={photo.title}
             className="max-h-[68vh] w-full object-contain sm:max-h-[74vh]"
